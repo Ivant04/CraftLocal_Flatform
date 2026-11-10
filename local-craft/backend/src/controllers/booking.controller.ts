@@ -1,14 +1,15 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 import { BookingService } from '../services/booking.service';
 import Booking from '../models/booking.model';
 import Ticket from '../models/ticket.model';
 import Timeslot from '../models/timeslot.model';
+import Review from '../models/review.model';
 
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
-  const { timeslotId, quantity } = req.body;
-  const booking = await BookingService.createBooking(req.user!._id.toString(), timeslotId, quantity);
+  const { timeslotId, quantity, couponCode } = req.body;
+  const booking = await BookingService.createBooking(req.user!._id.toString(), timeslotId, quantity, couponCode);
   sendSuccess(res, 'Đặt chỗ thành công! Vui lòng thanh toán để hoàn tất.', booking, 201);
 });
 
@@ -18,7 +19,11 @@ export const getMyBookings = asyncHandler(async (req: Request, res: Response) =>
     .populate('timeslotId', 'startTime endTime')
     .populate('hostId', 'fullName')
     .sort({ createdAt: -1 });
-  sendSuccess(res, 'Lấy danh sách đặt chỗ', bookings);
+  const reviewedIds = new Set((await Review.distinct('bookingId', { touristId: req.user!._id })).map(String));
+  sendSuccess(res, 'Lấy danh sách đặt chỗ', bookings.map((booking) => ({
+    ...booking.toObject(),
+    canReview: ['CHECKED_IN', 'COMPLETED'].includes(booking.bookingStatus) && !reviewedIds.has(String(booking._id)),
+  })));
 });
 
 export const getBookingById = asyncHandler(async (req: Request, res: Response) => {

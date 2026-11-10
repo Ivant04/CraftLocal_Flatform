@@ -22,7 +22,7 @@ export interface Booking {
 }
 
 export interface BookingPayload {
-  workshopId: string;
   timeslotId: string;
-  guests: number;
+  quantity: number;
+  couponCode?: string;
 }

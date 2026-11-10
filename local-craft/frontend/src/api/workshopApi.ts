@@ -4,10 +4,11 @@ import type { WorkshopFilters } from '../types/workshop.type';
 const workshopApi = {
   getAll: (params?: WorkshopFilters) => axiosClient.get('/workshops', { params }),
   getById: (id: string) => axiosClient.get(`/workshops/${id}`),
-  create: (data: FormData) => axiosClient.post('/workshops', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  update: (id: string, data: FormData) => axiosClient.put(`/workshops/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  delete: (id: string) => axiosClient.delete(`/workshops/${id}`),
-  getByHost: () => axiosClient.get('/workshops/host/mine'),
+  getTimeslots: (id: string) => axiosClient.get(`/workshops/${id}/timeslots`),
+  create: (data: Record<string, unknown>) => axiosClient.post('/host/workshops', data),
+  update: (id: string, data: Record<string, unknown>) => axiosClient.put(`/host/workshops/${id}`, data),
+  delete: (id: string) => axiosClient.delete(`/host/workshops/${id}`),
+  getByHost: () => axiosClient.get('/host/workshops'),
 };
 
 export default workshopApi;

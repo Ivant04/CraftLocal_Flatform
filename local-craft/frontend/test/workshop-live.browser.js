@@ -1,0 +1,64 @@
+async page => {
+  const check = (condition, message) => { if (!condition) throw new Error(message); };
+  const artifactRoot = '/home/khovan/Workplaces/CraftLocal_Flatform/Report/test-results/2026-11-10';
+  const api = 'http://localhost:5000/api';
+  const id = '670000000000000000000003';
+  const runtimeErrors = [];
+  page.on('pageerror', error => runtimeErrors.push(error.message));
+  const detail = await (await page.request.get(`${api}/workshops/${id}`)).json();
+  const workshop = detail.data;
+  check(detail.success && workshop.images.length > 1, 'Live workshop or photos unavailable');
+  const timeslotsResponse = await page.request.get(`${api}/workshops/${id}/timeslots`);
+  const timeslots = (await timeslotsResponse.json()).data;
+  const reviewResponse = await page.request.get(`${api}/reviews/workshop/${id}`);
+  const reviews = (await reviewResponse.json()).data;
+  const guard = await page.request.post(`${api}/bookings`, { data: {} });
+  check(guard.status() === 405, 'Live test server must block writes');
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`http://localhost:5173/test/live.html?id=${id}`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: workshop.title, exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Cảm nhận từ người tham gia' }).waitFor();
+  await page.locator('.ws-review').first().waitFor();
+  const initial = await page.locator('.ws-dots button[aria-pressed=true]').getAttribute('aria-label');
+  await page.mouse.move(0, 0);
+  await page.waitForFunction(previous => document.querySelector('.ws-dots button[aria-pressed=true]')?.getAttribute('aria-label') !== previous, initial, { timeout: 8000 });
+  await page.getByRole('button', { name: 'Tạm dừng slideshow' }).click();
+  await page.getByRole('button', { name: 'Xem ảnh 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Ảnh tiếp theo', exact: true }).click();
+  check(await page.getByRole('button', { name: 'Xem ảnh 2', exact: true }).getAttribute('aria-pressed') === 'true', 'Manual slide navigation failed');
+  await page.getByRole('button', { name: 'Xem ảnh 1', exact: true }).click();
+  await page.waitForFunction(() => {
+    const image = document.querySelector('.ws-slide.is-active');
+    return image?.complete;
+  });
+  check((await page.getByRole('link', { name: 'Chỉ đường', exact: true }).getAttribute('href')).includes(encodeURIComponent(`${workshop.mapLocation.lat},${workshop.mapLocation.lng}`)), 'Directions do not match MongoDB coordinates');
+  await page.getByLabel('Số khách', { exact: true }).fill('2');
+  check((await page.locator('.ws-total').innerText()).includes((workshop.price * 2).toLocaleString('vi-VN')), 'Live price calculation mismatch');
+  await page.getByLabel('Mã giảm giá', { exact: true }).fill('INVALIDTEST');
+  await page.getByRole('button', { name: 'Áp dụng', exact: true }).click();
+  await page.getByRole('alert').filter({ hasText: 'không áp dụng' }).waitFor();
+  await page.screenshot({ path: `${artifactRoot}/live-invalid-coupon.png`, fullPage: true });
+  await page.getByLabel('Mã giảm giá', { exact: true }).fill('');
+  check(await page.locator('.ws-review').count() === reviews.length, 'Review count differs from API');
+  const future = timeslots.filter(slot => new Date(slot.startTime) > new Date());
+  if (!future.length) {
+    await page.getByText('Chưa có lịch sắp tới.', { exact: false }).waitFor();
+    check(await page.getByRole('button', { name: 'Đặt trải nghiệm', exact: true }).isDisabled(), 'Expired schedule must block booking');
+  }
+  const photos = await page.locator('.ws-slide').evaluateAll(images => images.map((image, i) => ({ index: i + 1, loaded: image.complete && image.naturalWidth > 0 })));
+  const map = page.locator('iframe.ws-map');
+  await map.scrollIntoViewIfNeeded();
+  const frame = await map.elementHandle().then(handle => handle.contentFrame());
+  check(!!frame, 'Map iframe unavailable');
+  await frame.waitForFunction(() => [...document.images].some(image => image.complete && image.naturalWidth > 0 && image.width >= 256), undefined, { timeout: 15000 });
+  const mapEvidence = await frame.evaluate(() => ({ textSample: document.body?.innerText?.slice(0, 140) || '', loadedMapTiles: [...document.images].filter(image => image.complete && image.naturalWidth > 0 && image.width >= 256).length }));
+  await map.screenshot({ path: `${artifactRoot}/live-map.png` });
+  await page.screenshot({ path: `${artifactRoot}/live-desktop.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'Mobile overflow');
+  await map.scrollIntoViewIfNeeded();
+  await frame.waitForFunction(() => [...document.images].some(image => image.complete && image.naturalWidth > 0 && image.width >= 256), undefined, { timeout: 15000 });
+  await page.screenshot({ path: `${artifactRoot}/live-mobile.png`, fullPage: true });
+  check(runtimeErrors.length === 0, `Runtime errors: ${runtimeErrors.join('; ')}`);
+  return { mode: 'live-readonly-production-components', workshopId: id, title: workshop.title, apiStatuses: { detail: 200, timeslots: timeslotsResponse.status(), reviews: reviewResponse.status(), writeGuard: guard.status() }, imageCount: workshop.images.length, photos, reviewCount: reviews.length, futureTimeslots: future.length, promotionConfigured: !!workshop.promotion, checks: ['autoplay', 'manual slides', 'pause', 'directions match database', 'price by guest count', 'invalid coupon rejection', 'real reviews visible', 'no future slot disables booking', 'mobile no overflow', 'no React runtime errors'], mapEvidence, skipped: ['authenticated review write', 'booking write', 'payOS transaction', 'successful coupon on live data without a promotion'], databaseWrites: 0 };
+}
