@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { asyncHandler } from '../utils/asyncHandler';
 import { sendSuccess, sendError } from '../utils/apiResponse';
 import Workshop from '../models/workshop.model';
 import Category from '../models/category.model';
+import { validatePromotion } from '../../../shared/workshopPricing';
 
 const slugify = (text: string) => {
   return text
@@ -122,6 +123,9 @@ export const createWorkshop = asyncHandler(async (req: Request, res: Response) =
   const hostWorkshopName = req.user.hostProfile?.workshopName || "Workshop Local";
 
   const numPrice = Number(price);
+  let promotion;
+  try { promotion = req.body.promotion === undefined ? null : validatePromotion(req.body.promotion); }
+  catch (error) { return sendError(res, (error as Error).message, 400); }
   const numDuration = Number(duration);
   const numMaxGuests = Number(maxGuestsPerSlot || 10);
 
@@ -142,6 +146,7 @@ export const createWorkshop = asyncHandler(async (req: Request, res: Response) =
     hostPhone,
     hostWorkshopName,
     price: numPrice,
+    promotion,
     duration: numDuration,
     maxGuestsPerSlot: numMaxGuests,
     images: finalImages,
@@ -190,6 +195,10 @@ export const updateWorkshop = asyncHandler(async (req: Request, res: Response) =
   } = req.body;
 
   const updateData: any = {};
+  if (req.body.promotion !== undefined) {
+    try { updateData.promotion = validatePromotion(req.body.promotion); }
+    catch (error) { return sendError(res, (error as Error).message, 400); }
+  }
   if (title) {
     updateData.title = title;
     updateData.slug = `${slugify(title)}-${Date.now()}`;

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
 import { sendSuccess, sendError } from "../utils/apiResponse";
 import Review from "../models/review.model";

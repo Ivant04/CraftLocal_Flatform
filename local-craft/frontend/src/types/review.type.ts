@@ -14,7 +14,7 @@ export interface Review {
 
 export interface ReviewPayload {
   bookingId: string;
-  workshopId: string;
+  workshopId?: string;
   rating: number;
   comment: string;
   images?: string[];

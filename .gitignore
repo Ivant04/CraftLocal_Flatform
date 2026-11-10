@@ -31,3 +31,10 @@ pnpm-debug.log*
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Local configuration supplied without a dot prefix
+local-craft/frontend/env
+local-craft/backend/env
+
+# Local test captures and reports
+Report/test-results/
