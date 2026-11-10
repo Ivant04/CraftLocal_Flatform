@@ -1,13 +1,14 @@
 {
   "name": "craftlocal-server",
   "version": "1.0.0",
-  "description": "CraftLocal - Cultural & Craft Workshop Booking System Backend",
-  "main": "dist/server.js",
+  "description": "CraftLocal - Cultural and Craft Workshop Booking System Backend",
+  "main": "dist/backend/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "seed": "ts-node-dev --transpile-only src/seeders/seed.ts"
+    "start": "node dist/backend/src/server.js",
+    "seed": "ts-node-dev --transpile-only src/seeders/seed.ts",
+    "test": "node --experimental-strip-types --test test/*.test.mjs ../shared/*.test.mjs ../frontend/test/*.test.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -18,13 +19,13 @@
     "express-rate-limit": "^7.4.1",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.8.0",
+    "mongoose": "^8.9.5",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.15",
     "qrcode": "^1.5.4",
     "uuid": "^10.0.0",
-    "zod": "^3.23.8"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import type { WorkshopPromotion } from '../../../shared/workshopPricing';
 
 export interface IWorkshop extends Document {
   hostId: mongoose.Types.ObjectId;
@@ -17,6 +18,7 @@ export interface IWorkshop extends Document {
   hostPhone: string;
   hostWorkshopName: string;
   price: number;
+  promotion?: WorkshopPromotion | null;
   duration: number;
   maxGuestsPerSlot: number;
   images: string[];
@@ -54,6 +56,13 @@ const workshopSchema = new Schema<IWorkshop>(
     hostPhone: { type: String, required: true },
     hostWorkshopName: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
+    promotion: {
+      type: new Schema({
+        code: { type: String, required: true, trim: true, uppercase: true, match: /^[A-Z0-9_-]{3,32}$/ },
+        percentOff: { type: Number, required: true, min: 1, max: 99, validate: Number.isInteger },
+      }, { _id: false }),
+      default: null,
+    },
     duration: { type: Number, required: true, min: 1 },
     maxGuestsPerSlot: { type: Number, default: 10 },
     images: [String],

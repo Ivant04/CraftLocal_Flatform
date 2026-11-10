@@ -9,6 +9,8 @@ export interface IBooking extends Document {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  couponCode?: string;
+  discountAmount?: number;
   bookingStatus: 'PENDING' | 'PAID' | 'CANCELLED' | 'CHECKED_IN' | 'COMPLETED' | 'REFUNDED';
   paymentId?: mongoose.Types.ObjectId;
   ticketId?: mongoose.Types.ObjectId;
@@ -31,6 +33,8 @@ const bookingSchema = new Schema<IBooking>(
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true },
     totalPrice: { type: Number, required: true },
+    couponCode: String,
+    discountAmount: { type: Number, min: 0, default: 0 },
     bookingStatus: { type: String, enum: ['PENDING', 'PAID', 'CANCELLED', 'CHECKED_IN', 'COMPLETED', 'REFUNDED'], default: 'PENDING' },
     paymentId: { type: Schema.Types.ObjectId, ref: 'Payment' },
     ticketId: { type: Schema.Types.ObjectId, ref: 'Ticket' },

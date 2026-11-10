@@ -64,9 +64,9 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
       amount: booking.totalPrice,
       description: `CL ${paymentCode.slice(-8)}`,
       items: [{
-        name: workshopTitle.slice(0, 50),
-        quantity: booking.quantity,
-        price: booking.unitPrice,
+        name: `${workshopTitle} (${booking.quantity} khách)`.slice(0, 50),
+        quantity: 1,
+        price: booking.totalPrice,
       }],
     });
 

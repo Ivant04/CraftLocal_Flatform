@@ -11,5 +11,8 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-  },
+    fs: {
+      deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/env']
+    }
+  }
 });

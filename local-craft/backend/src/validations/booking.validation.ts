@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createBookingSchema = z.object({
-  timeslotId: z.string().min(1, 'Vui lòng chọn khung giờ'),
-  quantity: z.coerce.number().min(1, 'Số lượng vé tối thiểu là 1'),
+  timeslotId: z.string().regex(/^[a-f\d]{24}$/i, 'Khung giờ không hợp lệ'),
+  quantity: z.number().int().min(1),
+  couponCode: z.string().trim().max(32).optional(),
 });
-
