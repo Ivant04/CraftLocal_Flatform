@@ -1,46 +1,171 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Calendar, Clock, Users, QrCode, Star, ArrowRight, Sparkles, Filter } from 'lucide-react';
 import { bookings } from '../../utils/mockData';
 import { formatCurrencyShort } from '../../utils/formatCurrency';
-import { formatDate, formatTime } from '../../utils/formatDate';
+import { formatTime } from '../../utils/formatDate';
 import { BOOKING_STATUS_LABELS } from '../../utils/constants';
 import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
 
-const statusColors: Record<string, string> = {
-  PENDING: 'bg-amber-100 text-amber-700',
-  PAID: 'bg-blue-100 text-blue-700',
-  CHECKED_IN: 'bg-emerald-100 text-emerald-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-};
-
 const MyBookingsPage: React.FC = () => {
-  if (bookings.length === 0) return <EmptyState title="Chưa có lịch đặt" description="Bạn chưa đặt workshop nào. Hãy khám phá các trải nghiệm thú vị!" />;
+  const [filter, setFilter] = useState<'ALL' | 'UPCOMING' | 'COMPLETED' | 'CANCELLED'>('ALL');
+
+  const filteredBookings = bookings.filter((b) => {
+    if (filter === 'UPCOMING') return b.status === 'PAID' || b.status === 'PENDING' || b.status === 'CHECKED_IN';
+    if (filter === 'COMPLETED') return b.status === 'COMPLETED';
+    if (filter === 'CANCELLED') return b.status === 'CANCELLED';
+    return true;
+  });
 
   return (
-    <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16 py-10">
-      <h1 className="font-headline-lg text-headline-md text-deep-earth mb-8">Lịch đặt của tôi</h1>
-      <div className="space-y-4">
-        {bookings.map((b) => (
-          <div key={b._id} className="bg-white rounded-xl border border-soft-clay p-5 hover:shadow-md transition-shadow">
-            <div className="flex flex-col md:flex-row gap-4">
-              {b.workshopImage && <img src={b.workshopImage} alt={b.workshopTitle} className="w-full md:w-32 h-24 rounded-lg object-cover" />}
-              <div className="flex-1">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-semibold">{b.workshopTitle}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${statusColors[b.status]}`}>{BOOKING_STATUS_LABELS[b.status]}</span>
-                </div>
-                <p className="text-sm text-on-surface-variant">{b.timeslotDate} · {formatTime(b.timeslotStartTime)} - {formatTime(b.timeslotEndTime)}</p>
-                <p className="text-sm text-on-surface-variant">{b.guests} khách · {formatCurrencyShort(b.totalAmount)}</p>
-              </div>
-              <div className="flex md:flex-col gap-2">
-                {b.status === 'PAID' && <Link to={`/my-bookings/${b._id}/ticket`}><Button size="sm" variant="outline">Xem vé</Button></Link>}
-                {b.status === 'COMPLETED' && <Link to={`/review/${b._id}`}><Button size="sm" variant="secondary">Viết đánh giá</Button></Link>}
-              </div>
-            </div>
+    <div className="min-h-screen bg-surface-warm pb-20 pt-8">
+      <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-12">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">Tài khoản du khách</span>
+            <h1 className="font-headline text-2xl md:text-3xl lg:text-4xl font-bold text-deep-earth mt-1">
+              Lịch đặt workshop của tôi
+            </h1>
+            <p className="text-xs md:text-sm text-on-surface-variant mt-1">
+              Theo dõi lịch trải nghiệm, lấy vé điện tử và mã QR check-in tại làng nghề
+            </p>
           </div>
-        ))}
+          <Link to="/workshops">
+            <Button variant="primary" size="md">
+              <Sparkles size={16} className="mr-1.5" /> Đặt thêm workshop
+            </Button>
+          </Link>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-outline-subtle">
+          {[
+            { id: 'ALL', label: 'Tất cả lịch đặt', count: bookings.length },
+            { id: 'UPCOMING', label: 'Sắp diễn ra', count: bookings.filter((b) => b.status === 'PAID' || b.status === 'PENDING' || b.status === 'CHECKED_IN').length },
+            { id: 'COMPLETED', label: 'Đã hoàn thành', count: bookings.filter((b) => b.status === 'COMPLETED').length },
+            { id: 'CANCELLED', label: 'Đã hủy', count: bookings.filter((b) => b.status === 'CANCELLED').length },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id as any)}
+              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
+                filter === tab.id
+                  ? 'bg-deep-earth text-white shadow-xs'
+                  : 'bg-white border border-outline-subtle text-on-surface-variant hover:text-deep-earth hover:border-outline-variant'
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+
+        {/* Bookings List */}
+        {filteredBookings.length === 0 ? (
+          <EmptyState 
+            title="Chưa có lịch đặt phù hợp" 
+            description="Bạn hiện không có workshop nào trong mục này. Hãy khám phá và đặt chỗ cho chuyến đi sắp tới!"
+            action={
+              <Link to="/workshops">
+                <Button variant="primary">Khám phá Workshop</Button>
+              </Link>
+            }
+          />
+        ) : (
+          <div className="space-y-4">
+            {filteredBookings.map((b) => {
+              const statusVariant = 
+                b.status === 'COMPLETED' ? 'success' :
+                b.status === 'PAID' ? 'heritage' :
+                b.status === 'CHECKED_IN' ? 'earth' :
+                b.status === 'CANCELLED' ? 'subtle' : 'subtle';
+
+              return (
+                <div 
+                  key={b._id} 
+                  className="bg-white rounded-2xl border border-outline-subtle p-5 md:p-6 hover:shadow-md transition-all hover:border-primary/30"
+                >
+                  <div className="flex flex-col lg:flex-row gap-5 items-start lg:items-center justify-between">
+                    {/* Workshop Info */}
+                    <div className="flex gap-4 items-start flex-1 min-w-0">
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-surface-container shrink-0 border border-outline-subtle">
+                        <img 
+                          src={b.workshopImage || '/src/assets/images/pottery-workshop.jpg'} 
+                          alt={b.workshopTitle} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <Badge variant={statusVariant} size="sm">
+                            {BOOKING_STATUS_LABELS[b.status] || b.status}
+                          </Badge>
+                          <span className="text-xs text-on-surface-variant font-mono">
+                            Mã đặt: #{b._id.slice(-6).toUpperCase()}
+                          </span>
+                        </div>
+
+                        <Link 
+                          to={`/workshops/${b.workshopId}`} 
+                          className="font-headline font-bold text-base md:text-lg text-deep-earth hover:text-primary transition-colors line-clamp-1 block"
+                        >
+                          {b.workshopTitle}
+                        </Link>
+
+                        <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-on-surface-variant mt-2 font-medium">
+                          <span className="flex items-center gap-1">
+                            <Calendar size={13} className="text-primary" /> {b.timeslotDate}
+                          </span>
+                          <span className="flex items-center gap-1 font-mono">
+                            <Clock size={13} className="text-primary" /> {formatTime(b.timeslotStartTime)} - {formatTime(b.timeslotEndTime)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users size={13} className="text-primary" /> {b.guests} khách
+                          </span>
+                        </div>
+
+                        <div className="mt-3 text-xs">
+                          <span className="text-on-surface-variant">Tổng chi phí: </span>
+                          <strong className="text-primary font-bold text-sm font-headline">
+                            {formatCurrencyShort(b.totalAmount)}
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap sm:flex-nowrap gap-2.5 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-outline-subtle shrink-0">
+                      {(b.status === 'PAID' || b.status === 'CHECKED_IN') && (
+                        <Link to={`/my-bookings/${b._id}/ticket`} className="w-full sm:w-auto">
+                          <Button size="sm" variant="primary" fullWidth className="font-bold">
+                            <QrCode size={15} className="mr-1.5" /> Xem vé điện tử
+                          </Button>
+                        </Link>
+                      )}
+
+                      {b.status === 'COMPLETED' && (
+                        <Link to={`/review/${b._id}`} className="w-full sm:w-auto">
+                          <Button size="sm" variant="secondary" fullWidth className="font-bold">
+                            <Star size={15} className="mr-1.5 text-accent-gold fill-accent-gold" /> Viết đánh giá
+                          </Button>
+                        </Link>
+                      )}
+
+                      <Link to={`/workshops/${b.workshopId}`} className="w-full sm:w-auto">
+                        <Button size="sm" variant="ghost" fullWidth>
+                          Chi tiết workshop
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
