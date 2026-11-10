@@ -1,0 +1,1 @@
+// Workshop Card component
