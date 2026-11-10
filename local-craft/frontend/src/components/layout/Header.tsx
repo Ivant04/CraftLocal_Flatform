@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingCart, User, LogOut, ChevronDown } from 'lucide-react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Calendar, Package, Sparkles } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
 import { getRoleRedirectPath } from '../../utils/roleRedirect';
@@ -19,101 +19,155 @@ const Header: React.FC = () => {
     navigate('/');
   };
 
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `relative px-3 py-2 text-sm font-semibold transition-all duration-200 rounded-lg ${
+      isActive
+        ? 'text-[#964824] bg-[#964824]/8 font-bold'
+        : 'text-[#3D2B1F] hover:text-[#964824] hover:bg-[#FAF7F2]'
+    }`;
+
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-soft-clay/50">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#EAD8CC]/80 shadow-[0_4px_20px_rgba(61,43,31,0.04)]">
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16">
-        <div className="flex items-center justify-between h-16 md:h-[72px]">
+        <div className="flex items-center justify-between h-18 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="text-2xl">🏺</span>
-            <span className="font-headline-lg text-xl font-bold text-deep-earth group-hover:text-primary transition-colors">
-              CraftLocal
-            </span>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-2xl bg-[#964824] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-300">
+              <span className="text-xl">🏺</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-headline-lg text-xl md:text-2xl font-extrabold text-[#3D2B1F] group-hover:text-[#964824] transition-colors tracking-tight">
+                CraftLocal
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[#7A6255] -mt-1 hidden sm:block">
+                Tinh hoa nghề Việt
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-8">
-            <Link to="/workshops" className="text-on-surface hover:text-primary transition-colors font-medium text-[15px]">
-              Trải nghiệm
-            </Link>
-            <Link to="/products" className="text-on-surface hover:text-primary transition-colors font-medium text-[15px]">
-              Sản phẩm
-            </Link>
-            <Link to="/about" className="text-on-surface hover:text-primary transition-colors font-medium text-[15px]">
-              Giới thiệu
-            </Link>
+          <nav className="hidden md:flex items-center gap-2">
+            <NavLink to="/workshops" className={navLinkClass}>
+              Trải nghiệm Workshop
+            </NavLink>
+            <NavLink to="/products" className={navLinkClass}>
+              Sản phẩm thủ công
+            </NavLink>
+            <NavLink to="/about" className={navLinkClass}>
+              Về chúng tôi
+            </NavLink>
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
-            <Link to="/cart" className="relative p-2 hover:bg-soft-clay rounded-full transition-colors">
-              <ShoppingCart size={20} className="text-on-surface" />
+          <div className="flex items-center gap-2.5 md:gap-3.5">
+            {/* Cart Button */}
+            <Link
+              to="/cart"
+              className="relative p-2.5 rounded-xl border border-[#EAD8CC] bg-[#FAF7F2] hover:bg-white text-[#3D2B1F] hover:text-[#964824] hover:border-[#964824]/40 transition-all duration-200"
+              aria-label="Giỏ hàng"
+            >
+              <ShoppingCart size={19} />
               {cartCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-[#964824] text-white text-[11px] font-extrabold rounded-full flex items-center justify-center shadow-sm animate-scaleIn">
                   {cartCount}
                 </span>
               )}
             </Link>
 
+            {/* User Profile or Auth Buttons */}
             {isAuthenticated && user ? (
               <div className="relative">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="hidden md:flex items-center gap-2 px-3 py-2 hover:bg-soft-clay rounded-lg transition-colors"
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-[#EAD8CC] bg-[#FAF7F2] hover:bg-white transition-all cursor-pointer"
                 >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User size={16} className="text-primary" />
+                  <div className="w-8 h-8 rounded-full bg-[#964824] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.fullName} className="w-full h-full object-cover rounded-full" />
+                    ) : (
+                      user.fullName?.charAt(0)?.toUpperCase() || 'U'
+                    )}
                   </div>
-                  <span className="text-sm font-medium text-on-surface max-w-[120px] truncate">{user.fullName}</span>
-                  <ChevronDown size={14} className={`text-outline transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+                  <div className="hidden lg:flex flex-col text-left">
+                    <span className="text-xs font-bold text-[#3D2B1F] max-w-[110px] truncate leading-tight">
+                      {user.fullName}
+                    </span>
+                    <span className="text-[10px] text-[#7A6255] uppercase font-semibold">
+                      {ROLE_LABELS[user.role] || user.role}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={15}
+                    className={`text-[#7A6255] transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
+
                 {profileOpen && (
                   <>
                     <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-soft-clay py-2 z-50">
-                      <div className="px-4 py-2 border-b border-soft-clay">
-                        <p className="text-sm font-semibold text-on-surface">{user.fullName}</p>
-                        <p className="text-xs text-outline">{user.email}</p>
-                        <span className="inline-block mt-1 text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">{ROLE_LABELS[user.role] || user.role}</span>
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#EAD8CC] p-2 z-50 animate-scaleIn">
+                      <div className="px-3.5 py-3 border-b border-[#EAD8CC]/60 mb-1">
+                        <p className="text-sm font-bold text-[#3D2B1F] truncate">{user.fullName}</p>
+                        <p className="text-xs text-[#7A6255] truncate">{user.email}</p>
+                        <span className="inline-block mt-1.5 text-[10px] font-extrabold px-2 py-0.5 bg-[#964824]/10 text-[#964824] rounded-full uppercase">
+                          {ROLE_LABELS[user.role] || user.role}
+                        </span>
                       </div>
+
                       <Link
                         to={getRoleRedirectPath(user.role)}
                         onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-soft-clay transition-colors"
+                        className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
                       >
-                        <User size={16} /> Bảng điều khiển
+                        <Sparkles size={16} className="text-[#964824]" />
+                        <span>Bảng điều khiển</span>
                       </Link>
+
                       {user.role === 'TOURIST' && (
                         <>
-                          <Link to="/my-bookings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-soft-clay transition-colors">
-                            Lịch đặt của tôi
+                          <Link
+                            to="/my-bookings"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
+                          >
+                            <Calendar size={16} className="text-[#7A6255]" />
+                            <span>Vé & Lịch đặt chỗ</span>
                           </Link>
-                          <Link to="/my-orders" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-soft-clay transition-colors">
-                            Đơn hàng của tôi
+                          <Link
+                            to="/my-orders"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
+                          >
+                            <Package size={16} className="text-[#7A6255]" />
+                            <span>Đơn hàng của tôi</span>
                           </Link>
                         </>
                       )}
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors"
-                      >
-                        <LogOut size={16} /> Đăng xuất
-                      </button>
+
+                      <div className="pt-1 mt-1 border-t border-[#EAD8CC]/60">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <LogOut size={16} />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </div>
                     </div>
                   </>
                 )}
               </div>
             ) : (
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-bold text-[#3D2B1F] hover:text-[#964824] hover:bg-[#FAF7F2] rounded-xl transition-colors"
                 >
                   Đăng nhập
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all shadow-sm"
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#964824] hover:bg-[#7A3518] rounded-xl transition-all shadow-sm hover:shadow-md"
                 >
                   Đăng ký
                 </Link>
@@ -123,40 +177,69 @@ const Header: React.FC = () => {
             {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 hover:bg-soft-clay rounded-lg transition-colors"
+              className="md:hidden p-2 rounded-xl border border-[#EAD8CC] bg-[#FAF7F2] hover:bg-white text-[#3D2B1F] transition-colors"
+              aria-label="Menu"
             >
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu Drawer */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-soft-clay py-4 space-y-1 animate-[slideDown_0.2s_ease-out]">
-            <Link to="/workshops" onClick={() => setMobileOpen(false)} className="block px-4 py-3 text-on-surface hover:bg-soft-clay rounded-lg">
-              Trải nghiệm
+          <div className="md:hidden border-t border-[#EAD8CC] py-4 space-y-1.5 animate-slideDown">
+            <Link
+              to="/workshops"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+            >
+              Trải nghiệm Workshop
             </Link>
-            <Link to="/products" onClick={() => setMobileOpen(false)} className="block px-4 py-3 text-on-surface hover:bg-soft-clay rounded-lg">
-              Sản phẩm
+            <Link
+              to="/products"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+            >
+              Sản phẩm thủ công
             </Link>
-            <Link to="/about" onClick={() => setMobileOpen(false)} className="block px-4 py-3 text-on-surface hover:bg-soft-clay rounded-lg">
-              Giới thiệu
+            <Link
+              to="/about"
+              onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+            >
+              Về chúng tôi
             </Link>
+
             {isAuthenticated && user ? (
-              <>
-                <Link to={getRoleRedirectPath(user.role)} onClick={() => setMobileOpen(false)} className="block px-4 py-3 text-on-surface hover:bg-soft-clay rounded-lg">
-                  Bảng điều khiển
+              <div className="pt-2 border-t border-[#EAD8CC]">
+                <Link
+                  to={getRoleRedirectPath(user.role)}
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-2 text-sm font-bold text-[#964824]"
+                >
+                  Bảng điều khiển ({ROLE_LABELS[user.role] || user.role})
                 </Link>
-                <button onClick={handleLogout} className="w-full text-left px-4 py-3 text-error hover:bg-error/5 rounded-lg">
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-xl"
+                >
                   Đăng xuất
                 </button>
-              </>
+              </div>
             ) : (
-              <div className="flex gap-2 px-4 pt-2">
-                <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2.5 text-sm font-semibold text-primary border border-primary rounded-lg">
+              <div className="grid grid-cols-2 gap-2 px-2 pt-3 border-t border-[#EAD8CC]">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-center py-2.5 text-xs font-bold text-[#3D2B1F] border border-[#EAD8CC] rounded-xl"
+                >
                   Đăng nhập
                 </Link>
-                <Link to="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center px-4 py-2.5 text-sm font-semibold text-white bg-primary rounded-lg">
+                <Link
+                  to="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-center py-2.5 text-xs font-bold text-white bg-[#964824] rounded-xl"
+                >
                   Đăng ký
                 </Link>
               </div>
