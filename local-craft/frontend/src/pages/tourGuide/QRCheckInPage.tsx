@@ -2,18 +2,36 @@ import React, { useState } from "react";
 import { QrCode, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import tourGuideApi from "../../api/tourGuideApi";
 
 type ScanResult = "idle" | "valid" | "used" | "invalid";
 
 const QRCheckInPage: React.FC = () => {
   const [manualCode, setManualCode] = useState("");
   const [result, setResult] = useState<ScanResult>("idle");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleCheckIn = () => {
-    if (!manualCode) return;
-    if (manualCode.startsWith("BK-001")) setResult("valid");
-    else if (manualCode.startsWith("BK-002")) setResult("used");
-    else setResult("invalid");
+  const handleCheckIn = async () => {
+    const token = manualCode.trim();
+    if (!token) return;
+    try {
+      setLoading(true);
+      setMessage("");
+      const res = await tourGuideApi.checkIn(token);
+      setResult("valid");
+      setMessage(res.data?.message || "Khách đã được check-in thành công.");
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || "Mã QR không hợp lệ.";
+      setMessage(errMsg);
+      if (errMsg.toLowerCase().includes("sử dụng") || errMsg.toLowerCase().includes("check-in")) {
+        setResult("used");
+      } else {
+        setResult("invalid");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -40,10 +58,10 @@ const QRCheckInPage: React.FC = () => {
               setManualCode(e.target.value);
               setResult("idle");
             }}
-            placeholder="BK-001-CRAFT-2025"
+            placeholder="QR-xxxxxxxx-xxxx-..."
           />
-          <Button onClick={handleCheckIn} className="shrink-0">
-            Check-in
+          <Button onClick={handleCheckIn} disabled={loading} className="shrink-0">
+            {loading ? "Đang kiểm tra..." : "Check-in"}
           </Button>
         </div>
       </div>
@@ -56,7 +74,7 @@ const QRCheckInPage: React.FC = () => {
               <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
               <p className="font-semibold text-green-700 text-lg">Vé hợp lệ!</p>
               <p className="text-green-600 text-sm">
-                Khách đã được check-in thành công.
+                {message || "Khách đã được check-in thành công."}
               </p>
             </>
           )}
@@ -70,7 +88,7 @@ const QRCheckInPage: React.FC = () => {
                 Vé đã sử dụng
               </p>
               <p className="text-amber-600 text-sm">
-                Vé này đã được check-in trước đó.
+                {message || "Vé này đã được check-in trước đó."}
               </p>
             </>
           )}
@@ -81,7 +99,7 @@ const QRCheckInPage: React.FC = () => {
                 Vé không hợp lệ
               </p>
               <p className="text-red-600 text-sm">
-                Mã QR không được nhận diện.
+                {message || "Mã QR không được nhận diện."}
               </p>
             </>
           )}

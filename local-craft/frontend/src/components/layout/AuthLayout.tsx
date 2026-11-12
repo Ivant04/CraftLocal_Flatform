@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
+import BrandLogo from '../common/BrandLogo';
 
 const slides = [
   {
@@ -40,7 +41,7 @@ const AuthLayout: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] flex">
+    <div className="min-h-screen bg-craft-contour flex">
       {/* Left image carousel panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Slideshow images */}
@@ -67,9 +68,8 @@ const AuthLayout: React.FC = () => {
         {/* Content overlay */}
         <div className="absolute inset-0 z-20 flex flex-col justify-between p-10 lg:p-12">
           {/* Top - Logo */}
-          <Link to="/" className="flex items-center gap-3 self-start group">
-            <span className="text-4xl">🏺</span>
-            <span className="font-headline-lg text-3xl font-bold text-white group-hover:text-[#FFB597] transition-colors">CraftLocal</span>
+          <Link to="/" className="inline-flex items-center self-start group" aria-label="CraftLocal">
+            <BrandLogo theme="dark" size="lg" showTagline />
           </Link>
 
           {/* Bottom - Slide content + indicators */}
@@ -149,9 +149,8 @@ const AuthLayout: React.FC = () => {
               ))}
               <div className="absolute inset-0 bg-gradient-to-b from-[#3D2B1F]/30 to-[#FAF7F2]" />
               <div className="absolute bottom-4 left-0 right-0 text-center">
-                <Link to="/" className="inline-flex items-center gap-2">
-                  <span className="text-3xl">🏺</span>
-                  <span className="font-headline-lg text-2xl font-bold text-[#3D2B1F]">CraftLocal</span>
+                <Link to="/" className="inline-flex items-center group" aria-label="CraftLocal">
+                  <BrandLogo theme="light" size="sm" />
                 </Link>
               </div>
             </div>

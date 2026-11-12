@@ -40,10 +40,11 @@ const StorySection: React.FC = () => (
           <span>Sứ mệnh kết nối & gìn giữ</span>
         </span>
         
-        <h2 className="font-headline text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#3D2B1F] tracking-tight leading-[1.15] mt-1 mb-6">
+        <h2 className="font-headline text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#3D2B1F] tracking-tight leading-[1.15] mt-1 mb-4">
           Không chỉ là chuyến đi,<br />
           <span className="text-[#964824]">mà là sự gắn kết linh hồn.</span>
         </h2>
+        <div className="craft-hatch-accent mb-6" aria-hidden="true" />
         
         <p className="text-[#5A4A41] text-sm md:text-base leading-relaxed mb-4">
           CraftLocal ra đời với mong muốn hồi sinh sự quan tâm của thế hệ trẻ và du khách quốc tế đối với các làng nghề truyền thống Việt Nam. Chúng tôi tin rằng giá trị lớn nhất của một món đồ thủ công không nằm ở vẻ ngoài lộng lẫy, mà là thời gian, giọt mồ hôi và tâm huyết của người thợ đặt vào từng thớ gỗ, nhát búa.

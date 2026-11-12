@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, Clock, MapPin, Sparkles } from 'lucide-react';
 import type { Workshop } from '../../types/workshop.type';
 import { formatCurrencyShort } from '../../utils/formatCurrency';
+import ImageWithFallback from '../common/ImageWithFallback';
 
 interface WorkshopCardProps {
   workshop: Workshop;
@@ -24,8 +25,8 @@ export const WorkshopCard: React.FC<WorkshopCardProps> = ({ workshop, className 
     >
       {/* Thumbnail Container */}
       <div className="relative aspect-[16/10] overflow-hidden bg-[#FAF7F2]">
-        <img
-          src={workshop.images?.[0] || '/src/assets/images/pottery-workshop.jpg'}
+        <ImageWithFallback
+          src={workshop.images?.[0]}
           alt={workshop.title}
           className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
           loading="lazy"

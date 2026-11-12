@@ -11,7 +11,7 @@ const Newsletter: React.FC = () => {
   };
 
   return (
-    <section className="py-16 md:py-20 bg-primary/5">
+    <section className="py-16 md:py-20 bg-craft-contour-alt border-t border-[#EAD8CC]/60">
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16 text-center">
         <Mail size={40} className="mx-auto text-primary mb-4" />
         <h2 className="font-headline-lg text-headline-md text-deep-earth mb-3">

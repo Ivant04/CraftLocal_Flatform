@@ -1,22 +1,64 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { Calendar, Clock, Users, MapPin, Printer, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
-import { bookings, workshops } from '../../utils/mockData';
+import bookingApi from '../../api/bookingApi';
+import { normalizeBooking } from '../../utils/normalizers';
+import type { Booking } from '../../types/booking.type';
 import { formatTime } from '../../utils/formatDate';
 import { BOOKING_STATUS_LABELS } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
+import Loading from '../../components/common/Loading';
+import BrandLogo from '../../components/common/BrandLogo';
 
 const TicketPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const booking = bookings.find((b) => b._id === id);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!booking) {
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    setLoading(true);
+    setError('');
+
+    bookingApi
+      .getTicket(id)
+      .then((res) => {
+        if (active) setBooking(normalizeBooking(res.data?.data));
+      })
+      .catch(async (err) => {
+        try {
+          const fallback = await bookingApi.getById(id);
+          if (active) setBooking(normalizeBooking(fallback.data?.data));
+        } catch {
+          if (active) setError(err?.response?.data?.message || 'Mã vé không tồn tại hoặc chưa được tạo.');
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto px-5 py-24 flex justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
+  if (!booking || error) {
     return (
       <div className="max-w-md mx-auto px-5 py-24 text-center">
         <h2 className="text-2xl font-headline font-bold text-deep-earth mb-2">Không tìm thấy vé</h2>
-        <p className="text-on-surface-variant mb-6">Mã vé không tồn tại hoặc đã bị hủy.</p>
+        <p className="text-on-surface-variant mb-6">{error || 'Mã vé không tồn tại hoặc đã bị hủy.'}</p>
         <Link to="/my-bookings">
           <Button variant="primary">Xem danh sách lịch đặt</Button>
         </Link>
@@ -24,19 +66,17 @@ const TicketPage: React.FC = () => {
     );
   }
 
-  const workshop = workshops.find((w) => w._id === booking.workshopId);
-
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div className="min-h-screen bg-surface-warm py-12 px-5">
+    <div className="min-h-screen bg-craft-contour py-12 px-5">
       <div className="max-w-lg mx-auto">
         {/* Back Link */}
         <div className="mb-6 flex items-center justify-between">
-          <Link 
-            to="/my-bookings" 
+          <Link
+            to="/my-bookings"
             className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors"
           >
             <ArrowLeft size={16} /> Quay lại lịch đặt
@@ -54,11 +94,9 @@ const TicketPage: React.FC = () => {
           {/* Header Banner */}
           <div className="bg-gradient-to-r from-deep-earth to-primary text-white p-7 relative">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-headline text-lg tracking-wider font-bold text-accent-gold">
-                🏺 CraftLocal
-              </span>
+              <BrandLogo theme="dark" size="sm" showTagline={false} />
               <span className="text-[11px] uppercase tracking-widest bg-white/15 px-2.5 py-1 rounded-full text-white/90 font-mono">
-                PASS #{booking._id.slice(-6).toUpperCase()}
+                PASS {booking.bookingCode || `#${booking._id.slice(-6).toUpperCase()}`}
               </span>
             </div>
             <h1 className="font-headline text-2xl font-bold leading-tight">
@@ -76,10 +114,10 @@ const TicketPage: React.FC = () => {
               <h2 className="font-headline text-xl font-bold text-deep-earth mt-1 leading-snug">
                 {booking.workshopTitle}
               </h2>
-              {workshop?.location && (
+              {booking.workshopLocation && (
                 <div className="flex items-center gap-1 text-xs text-on-surface-variant mt-2">
                   <MapPin size={14} className="text-primary shrink-0" />
-                  <span>{workshop.location}</span>
+                  <span>{booking.workshopLocation}</span>
                 </div>
               )}
             </div>
@@ -87,10 +125,10 @@ const TicketPage: React.FC = () => {
             {/* QR Code Container */}
             <div className="bg-surface-warm p-6 rounded-2xl border border-outline-subtle flex flex-col items-center justify-center text-center">
               <div className="p-3 bg-white rounded-xl shadow-sm border border-outline-subtle inline-block mb-3">
-                <QRCodeSVG 
-                  value={booking.qrCode || `CRAFTLOCAL-TICKET-${booking._id}`} 
-                  size={160} 
-                  level="H" 
+                <QRCodeSVG
+                  value={booking.qrCode || `CRAFTLOCAL-TICKET-${booking._id}`}
+                  size={160}
+                  level="H"
                   fgColor="#3D2B1F"
                 />
               </div>
@@ -142,7 +180,7 @@ const TicketPage: React.FC = () => {
                 <span className="text-on-surface-variant flex items-center gap-1 mb-1">
                   <Sparkles size={13} className="text-primary" /> Trạng thái
                 </span>
-                <Badge variant={booking.status === 'CONFIRMED' ? 'success' : 'heritage'} size="sm">
+                <Badge variant={booking.status === 'COMPLETED' || booking.status === 'PAID' ? 'success' : 'heritage'} size="sm">
                   {BOOKING_STATUS_LABELS[booking.status] || booking.status}
                 </Badge>
               </div>

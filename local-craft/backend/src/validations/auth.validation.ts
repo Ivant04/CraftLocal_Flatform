@@ -23,3 +23,14 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
   newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
 });
+
+export const googleLoginSchema = z
+  .object({
+    accessToken: z.string().min(1).optional(),
+    idToken: z.string().min(1).optional(),
+    credential: z.string().min(1).optional(),
+    role: z.enum(['TOURIST', 'HOST']).optional(),
+  })
+  .refine((data) => Boolean(data.accessToken || data.idToken || data.credential), {
+    message: 'Thiếu mã xác thực Google',
+  });

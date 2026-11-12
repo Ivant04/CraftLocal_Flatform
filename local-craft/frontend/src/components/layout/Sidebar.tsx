@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { X, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { BrandMark } from '../common/BrandLogo';
 
 interface SidebarLink {
   to: string;
@@ -34,17 +35,15 @@ const Sidebar: React.FC<SidebarProps> = ({ links, isOpen, onClose, title }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-[280px] bg-[#FFFDF8] border-r border-[#EAD8CC] z-50 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed top-0 left-0 h-screen w-[280px] bg-[#FFFDF8] border-r border-[#EAD8CC] z-50 transform transition-transform duration-300 lg:translate-x-0 lg:sticky lg:top-0 lg:shrink-0 lg:z-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-[#EAD8CC]">
+          <div className="h-16 px-5 flex items-center justify-between border-b border-[#EAD8CC]">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#964824] flex items-center justify-center">
-                <span className="text-base">🏺</span>
-              </div>
+              <BrandMark size={36} variant="default" />
               <span className="font-headline-lg text-[15px] font-bold text-[#3D2B1F]">{title}</span>
             </div>
             <button onClick={onClose} className="lg:hidden p-1.5 hover:bg-[#E9E4D9] rounded-xl transition-colors">

@@ -1,17 +1,18 @@
 import axiosClient from './axiosClient';
 
 const tourGuideApi = {
-  getAll: () => axiosClient.get('/tour-guides'),
-  getByHost: () => axiosClient.get('/tour-guides/host/mine'),
+  getByHost: () => axiosClient.get('/host/tour-guides'),
   create: (data: { fullName: string; email: string; phone: string; password: string }) =>
-    axiosClient.post('/tour-guides', data),
-  getSchedule: () => axiosClient.get('/tour-guides/schedule'),
-  getCustomers: (timeslotId: string) => axiosClient.get(`/tour-guides/timeslot/${timeslotId}/customers`),
+    axiosClient.post('/host/tour-guides', data),
   assignToTimeslot: (data: { tourGuideId: string; timeslotId: string }) =>
-    axiosClient.post('/tour-guides/assign', data),
-  startTrip: (timeslotId: string) => axiosClient.put(`/tour-guides/timeslot/${timeslotId}/start`),
-  finishTrip: (timeslotId: string) => axiosClient.put(`/tour-guides/timeslot/${timeslotId}/finish`),
-  checkInBooking: (bookingId: string) => axiosClient.put(`/tour-guides/check-in/${bookingId}`),
+    axiosClient.put(`/host/timeslots/${data.timeslotId}/assign-guide`, { tourGuideId: data.tourGuideId }),
+  getProfile: () => axiosClient.get('/tour-guide/profile'),
+  getDashboard: () => axiosClient.get('/tour-guide/dashboard'),
+  getSchedule: () => axiosClient.get('/tour-guide/schedules'),
+  getCustomers: (timeslotId: string) => axiosClient.get(`/tour-guide/timeslots/${timeslotId}/customers`),
+  checkIn: (qrToken: string) => axiosClient.post('/tour-guide/check-in', { qrToken }),
+  startTrip: (timeslotId: string) => axiosClient.put(`/tour-guide/timeslots/${timeslotId}/start`),
+  finishTrip: (timeslotId: string) => axiosClient.put(`/tour-guide/timeslots/${timeslotId}/finish`),
 };
 
 export default tourGuideApi;

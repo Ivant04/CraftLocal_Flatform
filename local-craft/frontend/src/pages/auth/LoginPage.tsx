@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '../../schemas/loginSchema';
 import { useAuth } from '../../hooks/useAuth';
 import { getRoleRedirectPath } from '../../utils/roleRedirect';
-import { users } from '../../utils/mockData';
+import { authenticateWithGoogle } from '../../utils/googleAuth';
+import authApi from '../../api/authApi';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import { FcGoogle } from 'react-icons/fc';
@@ -14,31 +15,58 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState('');
   const [showPwd, setShowPwd] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) });
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const token = hashParams.get('token');
+    const rawUser = hashParams.get('user');
+    if (token && rawUser) {
+      try {
+        const parsedUser = JSON.parse(rawUser);
+        login(token, parsedUser);
+        navigate(getRoleRedirectPath(parsedUser.role), { replace: true });
+        return;
+      } catch {
+        setError('Không thể đọc thông tin tài khoản Google');
+      }
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    const googleError = searchParams.get('googleError');
+    if (googleError && googleError !== 'use_client_popup') {
+      setError(googleError === 'cancelled' ? 'Bạn đã hủy đăng nhập Google' : decodeURIComponent(googleError));
+    }
+  }, [location.hash, location.search, login, navigate]);
 
   const onSubmit = async (data: LoginFormData) => {
     setError('');
-    const foundUser = users.find((u) => u.email === data.email);
-    if (foundUser) {
-      login('mock-token-' + foundUser._id, foundUser);
-      navigate(getRoleRedirectPath(foundUser.role));
-    } else {
-      setError('Email hoặc mật khẩu không đúng');
+    try {
+      const res = await authApi.login(data);
+      const { token, user } = res.data.data;
+      login(token, user);
+      navigate(getRoleRedirectPath(user.role));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Email hoặc mật khẩu không đúng');
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+    setError('');
+    setGoogleLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      if (apiUrl) {
-        window.location.href = `${apiUrl}/auth/google`;
-      } else {
-        alert("Tính năng đăng nhập Google hiện đang được thử nghiệm!");
-      }
-    } catch (err) {
-      console.error(err);
+      const { token, user } = await authenticateWithGoogle();
+      login(token, user);
+      navigate(getRoleRedirectPath(user.role));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -97,10 +125,11 @@ const LoginPage: React.FC = () => {
       <button
         type="button"
         onClick={handleGoogleLogin}
-        className="w-full h-[52px] flex items-center justify-center gap-3 rounded-2xl border-2 border-[#E3CFC2] bg-white text-[#3D2B1F] font-semibold hover:bg-[#FAF7F2] hover:border-[#964824]/30 transition-all"
+        disabled={googleLoading}
+        className="w-full h-[52px] flex items-center justify-center gap-3 rounded-2xl border-2 border-[#E3CFC2] bg-white text-[#3D2B1F] font-semibold hover:bg-[#FAF7F2] hover:border-[#964824]/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
       >
         <FcGoogle className="text-xl" />
-        <span>Tiếp tục với Google</span>
+        <span>{googleLoading ? 'Đang kết nối Google...' : 'Tiếp tục với Google'}</span>
       </button>
 
       <p className="text-center mt-8 text-sm text-[#7A6255]">

@@ -4,7 +4,7 @@ import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 
 const MainLayout: React.FC = () => (
-  <div className="min-h-screen flex flex-col bg-surface">
+  <div className="min-h-screen flex flex-col bg-craft-contour">
     <Header />
     <main className="flex-1">
       <Outlet />

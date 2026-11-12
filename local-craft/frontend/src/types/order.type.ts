@@ -1,4 +1,4 @@
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'SHIPPING' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PACKING' | 'SHIPPING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
 
 export interface OrderItem {
   productId: string;
@@ -10,8 +10,10 @@ export interface OrderItem {
 
 export interface Order {
   _id: string;
+  orderCode?: string;
   touristId: string;
   touristName: string;
+  touristPhone?: string;
   items: OrderItem[];
   shippingAddress: string;
   shippingFee: number;

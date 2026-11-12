@@ -6,9 +6,8 @@ const bookingApi = {
   getMine: () => axiosClient.get('/bookings/my-bookings'),
   getMyBookings: () => axiosClient.get('/bookings/my-bookings'),
   getById: (id: string) => axiosClient.get(`/bookings/${id}`),
-  cancel: (id: string) => axiosClient.put(`/bookings/${id}/cancel`),
-  checkIn: (id: string) => axiosClient.put(`/bookings/${id}/check-in`),
-  getByTimeslot: (timeslotId: string) => axiosClient.get(`/bookings/timeslot/${timeslotId}`),
+  getTicket: (id: string) => axiosClient.get(`/bookings/${id}/ticket`),
+  cancel: (id: string, cancelReason?: string) => axiosClient.put(`/bookings/${id}/cancel`, { cancelReason }),
 };
 
 export default bookingApi;

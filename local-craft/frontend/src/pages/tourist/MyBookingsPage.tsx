@@ -1,16 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, Users, QrCode, Star, ArrowRight, Sparkles, Filter } from 'lucide-react';
-import { bookings } from '../../utils/mockData';
+import { Calendar, Clock, Users, QrCode, Star, Sparkles } from 'lucide-react';
+import bookingApi from '../../api/bookingApi';
+import { normalizeBooking } from '../../utils/normalizers';
+import type { Booking } from '../../types/booking.type';
 import { formatCurrencyShort } from '../../utils/formatCurrency';
 import { formatTime } from '../../utils/formatDate';
 import { BOOKING_STATUS_LABELS } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
+import ImageWithFallback from '../../components/common/ImageWithFallback';
+import Loading from '../../components/common/Loading';
 
 const MyBookingsPage: React.FC = () => {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState<'ALL' | 'UPCOMING' | 'COMPLETED' | 'CANCELLED'>('ALL');
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    bookingApi
+      .getMyBookings()
+      .then((res) => {
+        if (!active) return;
+        const list = res.data?.data;
+        setBookings(Array.isArray(list) ? list.map(normalizeBooking) : []);
+      })
+      .catch((err) => {
+        if (active) setError(err?.response?.data?.message || 'Không tải được danh sách đặt chỗ.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredBookings = bookings.filter((b) => {
     if (filter === 'UPCOMING') return b.status === 'PAID' || b.status === 'PENDING' || b.status === 'CHECKED_IN';
@@ -20,7 +49,7 @@ const MyBookingsPage: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-surface-warm pb-20 pt-8">
+    <div className="min-h-screen bg-craft-contour pb-20 pt-8">
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-12">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -63,9 +92,17 @@ const MyBookingsPage: React.FC = () => {
         </div>
 
         {/* Bookings List */}
-        {filteredBookings.length === 0 ? (
-          <EmptyState 
-            title="Chưa có lịch đặt phù hợp" 
+        {loading ? (
+          <div className="py-16 flex justify-center">
+            <Loading />
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-2xl border border-red-200 p-8 text-center text-red-700 text-sm">
+            {error}
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <EmptyState
+            title="Chưa có lịch đặt phù hợp"
             description="Bạn hiện không có workshop nào trong mục này. Hãy khám phá và đặt chỗ cho chuyến đi sắp tới!"
             action={
               <Link to="/workshops">
@@ -76,24 +113,23 @@ const MyBookingsPage: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {filteredBookings.map((b) => {
-              const statusVariant = 
+              const statusVariant =
                 b.status === 'COMPLETED' ? 'success' :
                 b.status === 'PAID' ? 'heritage' :
-                b.status === 'CHECKED_IN' ? 'earth' :
-                b.status === 'CANCELLED' ? 'subtle' : 'subtle';
+                b.status === 'CHECKED_IN' ? 'earth' : 'subtle';
 
               return (
-                <div 
-                  key={b._id} 
+                <div
+                  key={b._id}
                   className="bg-white rounded-2xl border border-outline-subtle p-5 md:p-6 hover:shadow-md transition-all hover:border-primary/30"
                 >
                   <div className="flex flex-col lg:flex-row gap-5 items-start lg:items-center justify-between">
                     {/* Workshop Info */}
                     <div className="flex gap-4 items-start flex-1 min-w-0">
                       <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-surface-container shrink-0 border border-outline-subtle">
-                        <img 
-                          src={b.workshopImage || '/src/assets/images/pottery-workshop.jpg'} 
-                          alt={b.workshopTitle} 
+                        <ImageWithFallback
+                          src={b.workshopImage}
+                          alt={b.workshopTitle}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -104,12 +140,12 @@ const MyBookingsPage: React.FC = () => {
                             {BOOKING_STATUS_LABELS[b.status] || b.status}
                           </Badge>
                           <span className="text-xs text-on-surface-variant font-mono">
-                            Mã đặt: #{b._id.slice(-6).toUpperCase()}
+                            Mã đặt: {b.bookingCode || `#${b._id.slice(-6).toUpperCase()}`}
                           </span>
                         </div>
 
-                        <Link 
-                          to={`/workshops/${b.workshopId}`} 
+                        <Link
+                          to={`/workshops/${b.workshopId}`}
                           className="font-headline font-bold text-base md:text-lg text-deep-earth hover:text-primary transition-colors line-clamp-1 block"
                         >
                           {b.workshopTitle}
@@ -138,7 +174,7 @@ const MyBookingsPage: React.FC = () => {
 
                     {/* Actions */}
                     <div className="flex flex-wrap sm:flex-nowrap gap-2.5 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-outline-subtle shrink-0">
-                      {(b.status === 'PAID' || b.status === 'CHECKED_IN') && (
+                      {(b.status === 'PAID' || b.status === 'CHECKED_IN' || b.status === 'COMPLETED') && (
                         <Link to={`/my-bookings/${b._id}/ticket`} className="w-full sm:w-auto">
                           <Button size="sm" variant="primary" fullWidth className="font-bold">
                             <QrCode size={15} className="mr-1.5" /> Xem vé điện tử
@@ -146,7 +182,7 @@ const MyBookingsPage: React.FC = () => {
                         </Link>
                       )}
 
-                      {b.status === 'COMPLETED' && (
+                      {(b.canReview || b.status === 'COMPLETED' || b.status === 'CHECKED_IN') && (
                         <Link to={`/review/${b._id}`} className="w-full sm:w-auto">
                           <Button size="sm" variant="secondary" fullWidth className="font-bold">
                             <Star size={15} className="mr-1.5 text-accent-gold fill-accent-gold" /> Viết đánh giá

@@ -1,21 +1,4 @@
-export type WorkshopCategory =
-  | 'Pottery'
-  | 'Lantern Making'
-  | 'Textile & Weaving'
-  | 'Painting'
-  | 'Woodcarving'
-  | 'Cooking'
-  | 'Calligraphy'
-  | 'Bamboo Craft'
-  | 'Jewelry Making'
-  | 'Làm gốm'
-  | 'Làm đèn lồng'
-  | 'Dệt vải'
-  | 'Vẽ tranh'
-  | 'Điêu khắc gỗ'
-  | 'Nấu ăn'
-  | 'Thư pháp'
-  | 'Đan tre';
+export type WorkshopCategory = string;
 
 export type WorkshopStatus = 'ACTIVE' | 'HIDDEN' | 'DRAFT';
 
@@ -24,6 +7,7 @@ export interface Workshop {
   title: string;
   description: string;
   category: WorkshopCategory;
+  categoryId?: string;
   price: number;
   duration: number; // in minutes
   address: string;
@@ -49,6 +33,7 @@ export interface WorkshopFilters {
   maxPrice?: number;
   date?: string;
   search?: string;
+  sort?: string;
   page?: number;
   limit?: number;
 }
