@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import BrandLogo from '../common/BrandLogo';
 
 const Footer: React.FC = () => (
   <footer className="bg-deep-earth text-white/80">
@@ -7,9 +8,8 @@ const Footer: React.FC = () => (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
         {/* Brand */}
         <div>
-          <Link to="/" className="flex items-center gap-2 mb-4">
-            <span className="text-2xl">🏺</span>
-            <span className="font-headline-lg text-xl font-bold text-white">CraftLocal</span>
+          <Link to="/" className="inline-flex items-center mb-4 group" aria-label="CraftLocal">
+            <BrandLogo theme="dark" size="sm" showTagline />
           </Link>
           <p className="text-white/60 text-sm leading-relaxed">
             Chúng tôi nỗ lực gìn giữ di sản thông qua các trải nghiệm văn hóa chọn lọc và hỗ trợ cộng đồng nghệ nhân địa phương trên khắp Việt Nam.

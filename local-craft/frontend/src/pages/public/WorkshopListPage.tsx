@@ -1,11 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { workshops } from '../../utils/mockData';
+import workshopApi from '../../api/workshopApi';
+import categoryApi from '../../api/categoryApi';
+import { normalizeWorkshop } from '../../utils/normalizers';
+import type { Workshop } from '../../types/workshop.type';
 import WorkshopCard from '../../components/home/WorkshopCard';
-import { WORKSHOP_CATEGORIES, LOCATIONS } from '../../utils/constants';
+import { LOCATIONS, WORKSHOP_CATEGORIES } from '../../utils/constants';
 import { Search, SlidersHorizontal, RotateCcw, Sparkles } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
+
+interface CategoryOption {
+  _id: string;
+  name: string;
+  slug: string;
+}
 
 const WorkshopListPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -13,37 +22,73 @@ const WorkshopListPage: React.FC = () => {
   const locationParam = searchParams.get('location') || '';
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState(categoryParam);
   const [location, setLocation] = useState(locationParam);
-  const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'price-asc' | 'price-desc' | 'rating'
+  const [sortBy, setSortBy] = useState('popular');
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Sync state if URL params change
-  React.useEffect(() => {
-    if (categoryParam) setCategory(categoryParam);
-    if (locationParam) setLocation(locationParam);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setCategory(categoryParam);
+    setLocation(locationParam);
   }, [categoryParam, locationParam]);
 
-  const filtered = useMemo(() => {
-    return workshops
-      .filter((ws) => {
-        const matchSearch =
-          ws.title.toLowerCase().includes(search.toLowerCase()) ||
-          (ws.description && ws.description.toLowerCase().includes(search.toLowerCase())) ||
-          (ws.hostName && ws.hostName.toLowerCase().includes(search.toLowerCase()));
-        const matchCat = !category || ws.category === category;
-        const matchLoc = !location || ws.location?.includes(location);
-        return matchSearch && matchCat && matchLoc;
+  useEffect(() => {
+    let active = true;
+    categoryApi
+      .getAll({ type: 'WORKSHOP' })
+      .then((res) => {
+        if (!active) return;
+        const list = res.data?.data;
+        setCategories(Array.isArray(list) ? list : []);
       })
-      .sort((a, b) => {
-        if (sortBy === 'price-asc') return a.price - b.price;
-        if (sortBy === 'price-desc') return b.price - a.price;
-        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-        return (b.totalReviews || 0) - (a.totalReviews || 0);
+      .catch(() => {
+        if (active) setCategories([]);
       });
-  }, [search, category, location, sortBy]);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    workshopApi
+      .getAll({
+        category: category || undefined,
+        location: location || undefined,
+        search: debouncedSearch || undefined,
+        sort: sortBy,
+        limit: 50,
+      })
+      .then((res) => {
+        if (!active) return;
+        const raw = res.data?.data?.workshops ?? res.data?.data ?? [];
+        setWorkshops(Array.isArray(raw) ? raw.map(normalizeWorkshop) : []);
+      })
+      .catch((err) => {
+        if (active) setError(err?.response?.data?.message || 'Không tải được danh sách workshop.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [category, location, debouncedSearch, sortBy]);
 
   const handleResetFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setCategory('');
     setLocation('');
     setSortBy('popular');
@@ -51,11 +96,14 @@ const WorkshopListPage: React.FC = () => {
   };
 
   const hasActiveFilters = Boolean(search || category || location || sortBy !== 'popular');
+  const categoryOptions =
+    categories.length > 0
+      ? categories
+      : WORKSHOP_CATEGORIES.map((name) => ({ _id: name, name, slug: name }));
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] py-8 md:py-12">
+    <div className="min-h-screen bg-craft-contour py-8 md:py-12">
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16">
-        
         {/* Page Header */}
         <PageHeader
           badge="Khám phá di sản"
@@ -64,7 +112,7 @@ const WorkshopListPage: React.FC = () => {
         >
           <div className="flex items-center gap-2 text-xs font-semibold text-[#7A6255] bg-white px-3.5 py-2 rounded-xl border border-[#EAD8CC]">
             <Sparkles size={14} className="text-[#964824]" />
-            <span>Hiển thị {filtered.length} workshop</span>
+            <span>Hiển thị {workshops.length} workshop</span>
           </div>
         </PageHeader>
 
@@ -91,8 +139,10 @@ const WorkshopListPage: React.FC = () => {
                 className="w-full px-3.5 py-2.5 text-sm font-medium text-[#3D2B1F] border border-[#EAD8CC] rounded-xl bg-[#FAF7F2]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#964824]/20 focus:border-[#964824] transition-all cursor-pointer"
               >
                 <option value="">Tất cả danh mục nghề</option>
-                {WORKSHOP_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {categoryOptions.map((c) => (
+                  <option key={c._id} value={c.slug || c.name}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -141,19 +191,23 @@ const WorkshopListPage: React.FC = () => {
             >
               Tất cả
             </button>
-            {WORKSHOP_CATEGORIES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCategory(category === c ? '' : c)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  category === c
-                    ? 'bg-[#964824] text-white shadow-xs'
-                    : 'bg-[#FAF7F2] text-[#3D2B1F] hover:bg-[#EAD8CC]/60'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
+            {categoryOptions.map((c) => {
+              const val = c.slug || c.name;
+              const isSelected = category === val || category === c.name;
+              return (
+                <button
+                  key={c._id}
+                  onClick={() => setCategory(isSelected ? '' : val)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#964824] text-white shadow-xs'
+                      : 'bg-[#FAF7F2] text-[#3D2B1F] hover:bg-[#EAD8CC]/60'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              );
+            })}
 
             {hasActiveFilters && (
               <button
@@ -168,9 +222,19 @@ const WorkshopListPage: React.FC = () => {
         </div>
 
         {/* Results Grid */}
-        {filtered.length > 0 ? (
+        {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((ws) => (
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div key={idx} className="h-80 rounded-2xl bg-white border border-[#EAD8CC] animate-pulse" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-3xl border border-red-200 p-10 text-center text-red-700 text-sm">
+            {error}
+          </div>
+        ) : workshops.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {workshops.map((ws) => (
               <WorkshopCard key={ws._id} workshop={ws} />
             ))}
           </div>
@@ -190,7 +254,6 @@ const WorkshopListPage: React.FC = () => {
             />
           </div>
         )}
-
       </div>
     </div>
   );

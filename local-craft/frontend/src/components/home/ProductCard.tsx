@@ -4,6 +4,7 @@ import { Star, ShoppingCart, Check } from 'lucide-react';
 import type { Product } from '../../types/product.type';
 import { formatCurrencyShort } from '../../utils/formatCurrency';
 import { useCart } from '../../hooks/useCart';
+import ImageWithFallback from '../common/ImageWithFallback';
 
 interface ProductCardProps {
   product: Product;
@@ -31,8 +32,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, className = '
       className={`group flex flex-col bg-white rounded-2xl overflow-hidden border border-[#EAD8CC] hover:border-[#964824]/40 hover:shadow-[0_16px_40px_rgba(61,43,31,0.1)] hover:-translate-y-1.5 transition-all duration-300 ${className}`}
     >
       <Link to={`/products/${product._id}`} className="block relative aspect-square overflow-hidden bg-[#FAF7F2]">
-        <img
-          src={product.images?.[0] || '/src/assets/images/pottery-workshop.jpg'}
+        <ImageWithFallback
+          src={product.images?.[0]}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
           loading="lazy"

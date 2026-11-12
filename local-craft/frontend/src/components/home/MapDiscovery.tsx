@@ -12,7 +12,8 @@ const regions = [
 
 const MapDiscovery: React.FC = () => (
   <section className="py-20 md:py-24 bg-[#2C2017] text-white relative overflow-hidden">
-    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#964824]/20 via-transparent to-transparent pointer-events-none" />
+    <div className="absolute inset-0 bg-craft-contour-dark pointer-events-none" aria-hidden="true" />
+    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#964824]/20 via-transparent to-transparent pointer-events-none" aria-hidden="true" />
 
     <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16 relative z-10">
       <div className="text-center max-w-2xl mx-auto mb-14">

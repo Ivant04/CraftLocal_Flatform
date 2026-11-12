@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
 import { getRoleRedirectPath } from '../../utils/roleRedirect';
 import { ROLE_LABELS } from '../../utils/constants';
+import BrandLogo from '../common/BrandLogo';
 
 const Header: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -31,18 +32,8 @@ const Header: React.FC = () => {
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16">
         <div className="flex items-center justify-between h-18 md:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-2xl bg-[#964824] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform duration-300">
-              <span className="text-xl">🏺</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-headline-lg text-xl md:text-2xl font-extrabold text-[#3D2B1F] group-hover:text-[#964824] transition-colors tracking-tight">
-                CraftLocal
-              </span>
-              <span className="text-[10px] font-medium uppercase tracking-wider text-[#7A6255] -mt-1 hidden sm:block">
-                Tinh hoa nghề Việt
-              </span>
-            </div>
+          <Link to="/" className="flex items-center group" aria-label="CRAFT - Tinh hoa nghề Việt">
+            <BrandLogo theme="light" size="md" showTagline />
           </Link>
 
           {/* Desktop Nav */}

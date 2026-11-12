@@ -37,7 +37,9 @@ export const getCustomers = asyncHandler(
     const bookings = await Booking.find({
       timeslotId: timeslot._id,
       bookingStatus: { $in: ["PAID", "CHECKED_IN", "COMPLETED"] },
-    }).populate("touristId", "fullName email phone");
+    })
+      .populate("touristId", "fullName email phone")
+      .populate("ticketId", "qrToken status");
 
     sendSuccess(res, "Lấy danh sách khách hàng", bookings);
   },

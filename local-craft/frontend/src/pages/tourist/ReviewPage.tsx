@@ -1,9 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Star, Sparkles, ArrowLeft, Heart, CheckCircle2 } from 'lucide-react';
-import { bookings } from '../../utils/mockData';
+import { Star, Sparkles, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import bookingApi from '../../api/bookingApi';
+import reviewApi from '../../api/reviewApi';
+import { normalizeBooking } from '../../utils/normalizers';
+import type { Booking } from '../../types/booking.type';
 import Textarea from '../../components/common/Textarea';
 import Button from '../../components/common/Button';
+import ImageWithFallback from '../../components/common/ImageWithFallback';
+import Loading from '../../components/common/Loading';
 
 const ratingLabels: Record<number, string> = {
   1: 'Chưa hài lòng - Cần cải thiện nhiều',
@@ -16,13 +21,43 @@ const ratingLabels: Record<number, string> = {
 const ReviewPage: React.FC = () => {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loading, setLoading] = useState(true);
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [comment, setComment] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitted, setSubmitted] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
 
-  const booking = bookings.find((b) => b._id === bookingId);
+  useEffect(() => {
+    if (!bookingId) return;
+    let active = true;
+    setLoading(true);
+    bookingApi
+      .getById(bookingId)
+      .then((res) => {
+        if (active) setBooking(normalizeBooking(res.data?.data));
+      })
+      .catch(() => {
+        if (active) setBooking(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [bookingId]);
+
+  if (loading) {
+    return (
+      <div className="max-w-md mx-auto px-5 py-24 flex justify-center">
+        <Loading />
+      </div>
+    );
+  }
+
   if (!booking) {
     return (
       <div className="max-w-md mx-auto px-5 py-24 text-center">
@@ -37,22 +72,34 @@ const ReviewPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!bookingId || submitting) return;
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setSubmitting(false);
-    setSubmitted(true);
-    setTimeout(() => {
-      navigate('/my-bookings');
-    }, 1500);
+    setError('');
+    try {
+      await reviewApi.create({
+        bookingId,
+        workshopId: booking.workshopId,
+        rating,
+        comment: comment.trim(),
+      });
+      setSubmitted(true);
+      setTimeout(() => {
+        navigate('/my-bookings');
+      }, 1500);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Không gửi được đánh giá. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const currentScore = hoverRating || rating;
 
   return (
-    <div className="min-h-screen bg-surface-warm py-12 px-5">
+    <div className="min-h-screen bg-craft-contour py-12 px-5">
       <div className="max-w-xl mx-auto">
-        <Link 
-          to="/my-bookings" 
+        <Link
+          to="/my-bookings"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors mb-6"
         >
           <ArrowLeft size={16} /> Quay lại lịch đặt
@@ -82,12 +129,12 @@ const ReviewPage: React.FC = () => {
                 <h1 className="font-headline text-2xl md:text-3xl font-bold text-deep-earth mt-1">
                   Cảm nhận của bạn về buổi thực hành
                 </h1>
-                
+
                 <div className="mt-4 p-4 rounded-2xl bg-surface-warm border border-outline-subtle flex items-center gap-3">
                   {booking.workshopImage && (
-                    <img 
-                      src={booking.workshopImage} 
-                      alt={booking.workshopTitle} 
+                    <ImageWithFallback
+                      src={booking.workshopImage}
+                      alt={booking.workshopTitle}
                       className="w-12 h-12 rounded-xl object-cover shrink-0 border border-outline-subtle"
                     />
                   )}
@@ -97,6 +144,13 @@ const ReviewPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {error && (
+                <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm flex items-center gap-2">
+                  <AlertCircle size={16} className="shrink-0" />
+                  {error}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Star Selector */}
@@ -152,10 +206,10 @@ const ReviewPage: React.FC = () => {
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
-                  fullWidth 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  fullWidth
+                  size="lg"
                   variant="primary"
                   isLoading={submitting}
                   className="py-3.5 font-bold shadow-md"

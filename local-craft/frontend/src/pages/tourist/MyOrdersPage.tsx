@@ -1,26 +1,54 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Truck, Calendar, MapPin, ArrowRight, ShoppingBag, CheckCircle2 } from 'lucide-react';
-import { orders } from '../../utils/mockData';
+import { Package, Calendar, ShoppingBag, CheckCircle2 } from 'lucide-react';
+import orderApi from '../../api/orderApi';
+import { normalizeOrder } from '../../utils/normalizers';
+import type { Order } from '../../types/order.type';
 import { formatCurrencyShort } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/formatDate';
 import { ORDER_STATUS_LABELS } from '../../utils/constants';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
+import Loading from '../../components/common/Loading';
 
 const MyOrdersPage: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'SHIPPING' | 'COMPLETED'>('ALL');
 
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    orderApi
+      .getMyOrders()
+      .then((res) => {
+        if (!active) return;
+        const list = res.data?.data;
+        setOrders(Array.isArray(list) ? list.map(normalizeOrder) : []);
+      })
+      .catch((err) => {
+        if (active) setError(err?.response?.data?.message || 'Không tải được danh sách đơn hàng.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const filteredOrders = orders.filter((o) => {
-    if (filter === 'PENDING') return o.status === 'PENDING' || o.status === 'CONFIRMED';
+    if (filter === 'PENDING') return o.status === 'PENDING' || o.status === 'CONFIRMED' || o.status === 'PACKING';
     if (filter === 'SHIPPING') return o.status === 'SHIPPING';
     if (filter === 'COMPLETED') return o.status === 'COMPLETED';
     return true;
   });
 
   return (
-    <div className="min-h-screen bg-surface-warm pb-20 pt-8">
+    <div className="min-h-screen bg-craft-contour pb-20 pt-8">
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-12">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -44,7 +72,7 @@ const MyOrdersPage: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-outline-subtle">
           {[
             { id: 'ALL', label: 'Tất cả đơn hàng', count: orders.length },
-            { id: 'PENDING', label: 'Đang xử lý / Chờ xác nhận', count: orders.filter((o) => o.status === 'PENDING' || o.status === 'CONFIRMED').length },
+            { id: 'PENDING', label: 'Đang xử lý / Chờ xác nhận', count: orders.filter((o) => o.status === 'PENDING' || o.status === 'CONFIRMED' || o.status === 'PACKING').length },
             { id: 'SHIPPING', label: 'Đang giao hàng', count: orders.filter((o) => o.status === 'SHIPPING').length },
             { id: 'COMPLETED', label: 'Đã giao thành công', count: orders.filter((o) => o.status === 'COMPLETED').length },
           ].map((tab) => (
@@ -62,9 +90,17 @@ const MyOrdersPage: React.FC = () => {
           ))}
         </div>
 
-        {filteredOrders.length === 0 ? (
-          <EmptyState 
-            title="Chưa có đơn hàng nào" 
+        {loading ? (
+          <div className="py-16 flex justify-center">
+            <Loading />
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-2xl border border-red-200 p-8 text-center text-red-700 text-sm">
+            {error}
+          </div>
+        ) : filteredOrders.length === 0 ? (
+          <EmptyState
+            title="Chưa có đơn hàng nào"
             description="Bạn hiện chưa có đơn đặt mua tác phẩm thủ công nào trong danh mục này."
             action={
               <Link to="/products">
@@ -75,14 +111,14 @@ const MyOrdersPage: React.FC = () => {
         ) : (
           <div className="space-y-5">
             {filteredOrders.map((o) => {
-              const statusVariant = 
+              const statusVariant =
                 o.status === 'COMPLETED' ? 'success' :
                 o.status === 'SHIPPING' ? 'earth' :
                 o.status === 'CONFIRMED' ? 'heritage' : 'subtle';
 
               return (
-                <div 
-                  key={o._id} 
+                <div
+                  key={o._id}
                   className="bg-white rounded-2xl border border-outline-subtle p-5 md:p-6 shadow-xs hover:border-primary/30 transition-all"
                 >
                   {/* Top order bar */}
@@ -94,7 +130,7 @@ const MyOrdersPage: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm md:text-base text-deep-earth">
-                            Đơn hàng #{o._id.slice(-6).toUpperCase()}
+                            Đơn hàng {o.orderCode || `#${o._id.slice(-6).toUpperCase()}`}
                           </span>
                           <Badge variant={statusVariant} size="sm">
                             {ORDER_STATUS_LABELS[o.status] || o.status}
@@ -117,8 +153,8 @@ const MyOrdersPage: React.FC = () => {
                   {/* Items list */}
                   <div className="space-y-2.5 mb-4">
                     {o.items.map((item) => (
-                      <div 
-                        key={item.productId} 
+                      <div
+                        key={item.productId}
                         className="flex items-center justify-between p-3 rounded-xl bg-surface-warm/60 border border-outline-subtle text-xs md:text-sm"
                       >
                         <div className="flex items-center gap-2.5">

@@ -14,7 +14,7 @@ const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-surface flex">
+    <div className="min-h-screen bg-craft-contour flex">
       <Sidebar links={adminLinks} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} title="Quản trị" />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b border-soft-clay bg-white flex items-center px-4 lg:px-8 gap-4">

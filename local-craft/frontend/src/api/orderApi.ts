@@ -1,12 +1,29 @@
 import axiosClient from './axiosClient';
 
+export interface CheckoutOrderPayload {
+  items: { productId: string; quantity: number }[];
+  shippingAddress:
+    | string
+    | {
+        fullName: string;
+        phone: string;
+        addressLine: string;
+        ward?: string;
+        district: string;
+        city: string;
+        province: string;
+        country?: string;
+        fullAddress: string;
+        note?: string;
+      };
+  paymentMethod?: string;
+}
+
 const orderApi = {
-  create: (data: { items: { productId: string; quantity: number }[]; shippingAddress: string; paymentMethod: string }) =>
-    axiosClient.post('/orders', data),
-  getMyOrders: () => axiosClient.get('/orders/mine'),
-  getById: (id: string) => axiosClient.get(`/orders/${id}`),
-  getByHost: () => axiosClient.get('/orders/host/mine'),
-  updateStatus: (id: string, status: string) => axiosClient.put(`/orders/${id}/status`, { status }),
+  checkout: (data: CheckoutOrderPayload) => axiosClient.post('/orders/checkout', data),
+  getMyOrders: () => axiosClient.get('/orders/my-orders'),
+  getByHost: () => axiosClient.get('/host/orders'),
+  updateStatus: (id: string, status: string) => axiosClient.put(`/host/orders/${id}/status`, { status }),
 };
 
 export default orderApi;

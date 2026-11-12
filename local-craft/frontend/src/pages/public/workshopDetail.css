@@ -1,4 +1,4 @@
-.workshop-detail { background: #faf7f2; color: #3d2b1f; font: 15px/1.65 'Manrope', sans-serif; padding-bottom: 64px; }
+.workshop-detail { background-color: var(--surface-canvas, #faf7f2); background-image: var(--contour-pattern-light); background-size: 600px 600px; background-repeat: repeat; color: #3d2b1f; font: 15px/1.65 'Manrope', sans-serif; padding-bottom: 64px; }
 .workshop-detail *, .workshop-detail *::before, .workshop-detail *::after { box-sizing: border-box; }
 .ws-container { max-width: 1240px; margin: auto; padding: 28px 32px; }
 .workshop-detail a { color: #964824; text-decoration: none; }

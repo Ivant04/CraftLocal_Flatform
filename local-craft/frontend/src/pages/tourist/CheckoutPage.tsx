@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { ShoppingBag, CreditCard, ShieldCheck, Banknote, Loader2 } from 'lucide-react';
+import { ShoppingBag, CreditCard, ShieldCheck, Banknote, Loader2, AlertTriangle } from 'lucide-react';
+import HeritagePinIcon from '../../components/common/HeritagePinIcon';
 import ImageWithFallback from '../../components/common/ImageWithFallback';
 import { useCart } from '../../hooks/useCart';
 import orderApi from '../../api/orderApi';
@@ -135,13 +136,14 @@ const CheckoutPage: React.FC = () => {
             
             {/* Error */}
             {error && (
-              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
-                ⚠️ {error}
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+                <AlertTriangle size={15} className="shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
             {/* Address */}
-            <SectionCard title="Địa chỉ nhận hàng" description="Địa chỉ nhận hàng và thông tin liên lạc của người nhận." icon={<span>📍</span>}>
+            <SectionCard title="Địa chỉ nhận hàng" description="Địa chỉ nhận hàng và thông tin liên lạc của người nhận." icon={<HeritagePinIcon className="w-6 h-6" />}>
               <div className="space-y-4">
                 <div>
                   <Input

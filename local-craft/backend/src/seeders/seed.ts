@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { env } from "../config/env";
+import { connectDB } from "../config/db";
 import User from "../models/user.model";
 import Category from "../models/category.model";
 import Workshop from "../models/workshop.model";
@@ -34,7 +34,7 @@ import {
 
 const seed = async () => {
   try {
-    await mongoose.connect(env.MONGO_URI);
+    await connectDB();
     console.log("✅ MongoDB connected for seeding");
 
     // Xóa dữ liệu và indexes cũ

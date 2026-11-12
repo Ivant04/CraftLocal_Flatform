@@ -1,46 +1,95 @@
-import React, { useState, useMemo } from 'react';
-import { products } from '../../utils/mockData';
+import React, { useState, useEffect } from 'react';
+import productApi from '../../api/productApi';
+import categoryApi from '../../api/categoryApi';
+import { normalizeProduct } from '../../utils/normalizers';
+import type { Product } from '../../types/product.type';
 import ProductCard from '../../components/home/ProductCard';
 import { PRODUCT_CATEGORIES } from '../../utils/constants';
 import { Search, SlidersHorizontal, RotateCcw, PackageCheck } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import EmptyState from '../../components/common/EmptyState';
 
+interface CategoryOption {
+  _id: string;
+  name: string;
+  slug: string;
+}
+
 const ProductListPage: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState('');
-  const [sortBy, setSortBy] = useState('popular'); // 'popular' | 'price-asc' | 'price-desc' | 'rating'
+  const [sortBy, setSortBy] = useState('popular');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const filtered = useMemo(() => {
-    return products
-      .filter((p) => {
-        const matchSearch =
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          (p.description && p.description.toLowerCase().includes(search.toLowerCase())) ||
-          (p.hostName && p.hostName.toLowerCase().includes(search.toLowerCase()));
-        const matchCat = !category || p.category === category;
-        return matchSearch && matchCat;
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    let active = true;
+    categoryApi
+      .getAll({ type: 'PRODUCT' })
+      .then((res) => {
+        if (!active) return;
+        const list = res.data?.data;
+        setCategories(Array.isArray(list) ? list : []);
       })
-      .sort((a, b) => {
-        if (sortBy === 'price-asc') return a.price - b.price;
-        if (sortBy === 'price-desc') return b.price - a.price;
-        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
-        return (b.totalReviews || 0) - (a.totalReviews || 0);
+      .catch(() => {
+        if (active) setCategories([]);
       });
-  }, [search, category, sortBy]);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    productApi
+      .getAll({
+        category: category || undefined,
+        search: debouncedSearch || undefined,
+        sort: sortBy,
+        limit: 50,
+      })
+      .then((res) => {
+        if (!active) return;
+        const raw = res.data?.data?.products ?? res.data?.data ?? [];
+        setProducts(Array.isArray(raw) ? raw.map(normalizeProduct) : []);
+      })
+      .catch((err) => {
+        if (active) setError(err?.response?.data?.message || 'Không tải được danh sách sản phẩm.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [category, debouncedSearch, sortBy]);
 
   const handleResetFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setCategory('');
     setSortBy('popular');
   };
 
   const hasActiveFilters = Boolean(search || category || sortBy !== 'popular');
+  const categoryOptions =
+    categories.length > 0
+      ? categories
+      : PRODUCT_CATEGORIES.map((name) => ({ _id: name, name, slug: name }));
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] py-8 md:py-12">
+    <div className="min-h-screen bg-craft-contour py-8 md:py-12">
       <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16">
-        
         {/* Page Header */}
         <PageHeader
           badge="Cửa hàng nghề truyền thống"
@@ -49,7 +98,7 @@ const ProductListPage: React.FC = () => {
         >
           <div className="flex items-center gap-2 text-xs font-semibold text-[#7A6255] bg-white px-3.5 py-2 rounded-xl border border-[#EAD8CC]">
             <PackageCheck size={14} className="text-[#964824]" />
-            <span>Hiển thị {filtered.length} sản phẩm</span>
+            <span>Hiển thị {products.length} sản phẩm</span>
           </div>
         </PageHeader>
 
@@ -76,8 +125,10 @@ const ProductListPage: React.FC = () => {
                 className="w-full px-3.5 py-2.5 text-sm font-medium text-[#3D2B1F] border border-[#EAD8CC] rounded-xl bg-[#FAF7F2]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#964824]/20 focus:border-[#964824] transition-all cursor-pointer"
               >
                 <option value="">Tất cả danh mục sản phẩm</option>
-                {PRODUCT_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {categoryOptions.map((c) => (
+                  <option key={c._id} value={c.slug || c.name}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -112,19 +163,23 @@ const ProductListPage: React.FC = () => {
             >
               Tất cả
             </button>
-            {PRODUCT_CATEGORIES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCategory(category === c ? '' : c)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  category === c
-                    ? 'bg-[#964824] text-white shadow-xs'
-                    : 'bg-[#FAF7F2] text-[#3D2B1F] hover:bg-[#EAD8CC]/60'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
+            {categoryOptions.map((c) => {
+              const val = c.slug || c.name;
+              const isSelected = category === val || category === c.name;
+              return (
+                <button
+                  key={c._id}
+                  onClick={() => setCategory(isSelected ? '' : val)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-[#964824] text-white shadow-xs'
+                      : 'bg-[#FAF7F2] text-[#3D2B1F] hover:bg-[#EAD8CC]/60'
+                  }`}
+                >
+                  {c.name}
+                </button>
+              );
+            })}
 
             {hasActiveFilters && (
               <button
@@ -139,9 +194,19 @@ const ProductListPage: React.FC = () => {
         </div>
 
         {/* Results Grid */}
-        {filtered.length > 0 ? (
+        {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filtered.map((p) => (
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div key={idx} className="h-80 rounded-2xl bg-white border border-[#EAD8CC] animate-pulse" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-3xl border border-red-200 p-10 text-center text-red-700 text-sm">
+            {error}
+          </div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {products.map((p) => (
               <ProductCard key={p._id} product={p} />
             ))}
           </div>
@@ -161,7 +226,6 @@ const ProductListPage: React.FC = () => {
             />
           </div>
         )}
-
       </div>
     </div>
   );

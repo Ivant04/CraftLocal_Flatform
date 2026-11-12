@@ -19,21 +19,82 @@ const slugify = (text: string) => {
     .replace(/-+/g, '-'); // collapse dashes
 };
 
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const WORKSHOP_SORT_MAP: Record<string, string> = {
+  popular: '-totalBookings -averageRating',
+  rating: '-averageRating -totalReviews',
+  'price-asc': 'price',
+  'price-desc': '-price',
+};
+
 // PUBLIC: Lấy danh sách workshops
 export const getWorkshops = asyncHandler(async (req: Request, res: Response) => {
   const { category, location, search, page = '1', limit = '12', sort = '-createdAt' } = req.query;
+  const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit as string, 10) || 12);
   const filter: any = { status: 'ACTIVE' };
-  if (category) filter.category = category;
-  if (location) filter.location = location;
-  if (search) filter.$text = { $search: search as string };
+  const andClauses: any[] = [];
 
-  const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
-  const workshops = await Workshop.find(filter)
-    .populate('hostId', 'fullName avatar hostProfile.workshopName')
-    .skip(skip).limit(parseInt(limit as string)).sort(sort as string);
-  const total = await Workshop.countDocuments(filter);
+  if (typeof category === 'string' && category.trim()) {
+    const trimmedCat = category.trim();
+    if (mongoose.Types.ObjectId.isValid(trimmedCat)) {
+      filter.categoryId = trimmedCat;
+    } else {
+      const catDoc = await Category.findOne({
+        $or: [
+          { slug: trimmedCat.toLowerCase() },
+          { name: new RegExp(`^${escapeRegex(trimmedCat)}$`, 'i') },
+        ],
+      });
+      if (!catDoc) {
+        return sendSuccess(res, 'Lấy danh sách workshop thành công', { workshops: [], total: 0, page: pageNum });
+      }
+      filter.categoryId = catDoc._id;
+    }
+  }
 
-  sendSuccess(res, 'Lấy danh sách workshop thành công', { workshops, total, page: parseInt(page as string) });
+  if (typeof location === 'string' && location.trim()) {
+    const locRegex = new RegExp(escapeRegex(location.trim()), 'i');
+    andClauses.push({
+      $or: [
+        { locationLabel: locRegex },
+        { 'address.city': locRegex },
+        { 'address.province': locRegex },
+      ],
+    });
+  }
+
+  if (typeof search === 'string' && search.trim()) {
+    const searchRegex = new RegExp(escapeRegex(search.trim()), 'i');
+    andClauses.push({
+      $or: [
+        { title: searchRegex },
+        { description: searchRegex },
+        { shortDescription: searchRegex },
+        { locationLabel: searchRegex },
+        { hostName: searchRegex },
+      ],
+    });
+  }
+
+  if (andClauses.length > 0) {
+    filter.$and = andClauses;
+  }
+
+  const sortExpr = typeof sort === 'string' ? (WORKSHOP_SORT_MAP[sort] || sort) : '-createdAt';
+  const skip = (pageNum - 1) * limitNum;
+  const [workshops, total] = await Promise.all([
+    Workshop.find(filter)
+      .populate('hostId', 'fullName avatar hostProfile.workshopName')
+      .populate('categoryId', 'name slug icon')
+      .skip(skip)
+      .limit(limitNum)
+      .sort(sortExpr),
+    Workshop.countDocuments(filter),
+  ]);
+
+  sendSuccess(res, 'Lấy danh sách workshop thành công', { workshops, total, page: pageNum });
 });
 
 // PUBLIC: Lấy chi tiết workshop
@@ -163,7 +224,9 @@ export const createWorkshop = asyncHandler(async (req: Request, res: Response) =
 
 // HOST: Lấy workshops của mình
 export const getMyWorkshops = asyncHandler(async (req: Request, res: Response) => {
-  const workshops = await Workshop.find({ hostId: req.user!._id, status: { $ne: 'DELETED' } }).sort({ createdAt: -1 });
+  const workshops = await Workshop.find({ hostId: req.user!._id, status: { $ne: 'DELETED' } })
+    .populate('categoryId', 'name slug icon')
+    .sort({ createdAt: -1 });
   sendSuccess(res, 'Lấy danh sách workshop', workshops);
 });
 
@@ -251,6 +314,9 @@ export const updateWorkshop = asyncHandler(async (req: Request, res: Response) =
   if (requiredItems) updateData.requiredItems = requiredItems;
   if (languages || language) updateData.languages = languages || language;
   if (difficulty) updateData.difficulty = difficulty;
+  if (req.body.status && ['DRAFT', 'ACTIVE', 'HIDDEN'].includes(req.body.status)) {
+    updateData.status = req.body.status;
+  }
 
   const workshop = await Workshop.findOneAndUpdate(
     { _id: req.params.id, hostId: req.user._id },

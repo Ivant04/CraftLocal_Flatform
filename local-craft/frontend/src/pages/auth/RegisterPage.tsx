@@ -3,15 +3,22 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterFormData } from '../../schemas/registerSchema';
+import { useAuth } from '../../hooks/useAuth';
+import { getRoleRedirectPath } from '../../utils/roleRedirect';
+import { authenticateWithGoogle } from '../../utils/googleAuth';
+import authApi from '../../api/authApi';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
 import { FcGoogle } from 'react-icons/fc';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Users, Info } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Users, Info, AlertCircle } from 'lucide-react';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<RegisterFormData>({
@@ -22,24 +29,46 @@ const RegisterPage: React.FC = () => {
   const selectedRole = watch('role');
 
   const onSubmit = async (data: RegisterFormData) => {
-    await new Promise((r) => setTimeout(r, 1000));
-    if (data.role === 'HOST') {
-      setSuccess('Tài khoản Chủ xưởng đang chờ Quản trị viên duyệt.');
-    } else {
-      navigate('/login');
+    setError('');
+    setSuccess('');
+    try {
+      const res = await authApi.register(data);
+      const payload = res.data?.data;
+      if (data.role === 'HOST' || payload?.user?.status === 'PENDING') {
+        setSuccess(res.data?.message || 'Tài khoản Chủ xưởng đang chờ Quản trị viên duyệt.');
+      } else if (payload?.token && payload?.user) {
+        login(payload.token, payload.user);
+        navigate(getRoleRedirectPath(payload.user.role));
+      } else {
+        navigate('/login');
+      }
+    } catch (err: any) {
+      const errData = err?.response?.data;
+      if (Array.isArray(errData?.errors) && errData.errors.length > 0) {
+        setError(errData.errors.map((e: any) => e.message).join('. '));
+      } else {
+        setError(errData?.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      }
     }
   };
 
-  const handleGoogleRegister = () => {
+  const handleGoogleRegister = async () => {
+    if (googleLoading) return;
+    setError('');
+    setSuccess('');
+    setGoogleLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL;
-      if (apiUrl) {
-        window.location.href = `${apiUrl}/auth/google`;
-      } else {
-        alert("Tính năng đăng ký bằng Google hiện đang được thử nghiệm!");
+      const { token, user } = await authenticateWithGoogle(selectedRole);
+      if (user.role === 'HOST' && user.status === 'PENDING') {
+        setSuccess('Tài khoản Chủ xưởng đang chờ Quản trị viên duyệt.');
+        return;
       }
-    } catch (err) {
-      console.error(err);
+      login(token, user);
+      navigate(getRoleRedirectPath(user.role));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Đăng ký bằng Google thất bại. Vui lòng thử lại.');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -47,6 +76,13 @@ const RegisterPage: React.FC = () => {
     <div className="w-full max-w-[460px] mx-auto rounded-3xl border border-[#EAD8CC] bg-[#FFFDF8]/95 p-8 md:p-10 shadow-[0_24px_80px_rgba(61,43,31,0.12)] backdrop-blur">
       <h1 className="font-headline-lg text-headline-md text-[#3D2B1F] mb-1">Đăng ký</h1>
       <p className="text-[#7A6255] mb-8 text-sm">Tạo tài khoản CraftLocal của bạn</p>
+
+      {error && (
+        <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       {success && (
         <div className="mb-5 p-4 bg-[#FFF4EA] border border-[#F0CDB9] text-[#7A3518] rounded-2xl text-sm flex items-center gap-2">
@@ -116,10 +152,11 @@ const RegisterPage: React.FC = () => {
       <button
         type="button"
         onClick={handleGoogleRegister}
-        className="w-full h-[52px] flex items-center justify-center gap-3 rounded-2xl border-2 border-[#E3CFC2] bg-white text-[#3D2B1F] font-semibold hover:bg-[#FAF7F2] hover:border-[#964824]/30 transition-all"
+        disabled={googleLoading}
+        className="w-full h-[52px] flex items-center justify-center gap-3 rounded-2xl border-2 border-[#E3CFC2] bg-white text-[#3D2B1F] font-semibold hover:bg-[#FAF7F2] hover:border-[#964824]/30 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
       >
         <FcGoogle className="text-xl" />
-        <span>Đăng ký bằng Google</span>
+        <span>{googleLoading ? 'Đang kết nối Google...' : 'Đăng ký bằng Google'}</span>
       </button>
 
       <p className="text-center mt-8 text-sm text-[#7A6255]">

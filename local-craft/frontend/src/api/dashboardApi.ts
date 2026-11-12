@@ -1,11 +1,9 @@
 import axiosClient from './axiosClient';
 
 const dashboardApi = {
-  getAdminStats: () => axiosClient.get('/dashboard/admin'),
-  getHostStats: () => axiosClient.get('/dashboard/host'),
-  getTourGuideStats: () => axiosClient.get('/dashboard/tour-guide'),
-  getRevenueByMonth: () => axiosClient.get('/dashboard/revenue'),
-  getRevenueByHost: () => axiosClient.get('/dashboard/revenue/hosts'),
+  getAdminStats: () => axiosClient.get('/admin/dashboard'),
+  getHostStats: () => axiosClient.get('/host/dashboard'),
+  getTourGuideStats: () => axiosClient.get('/tour-guide/dashboard'),
 };
 
 export default dashboardApi;

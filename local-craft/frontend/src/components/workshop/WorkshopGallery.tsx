@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
+import { DEFAULT_CRAFT_IMAGE, resolveImageUrl } from '../../utils/normalizers';
 
 export default function WorkshopGallery({ images, title }: { images: string[]; title: string }) {
   const [index, setIndex] = useState(0);
@@ -34,8 +35,9 @@ export default function WorkshopGallery({ images, title }: { images: string[]; t
         }
       }}>
       {images.length ? images.map((src, i) => (
-        <img key={`${src}-${i}`} src={src} alt={`${title} — ảnh ${i + 1}`} aria-hidden={i !== current}
-          className={`ws-slide ${i === current ? 'is-active' : ''}`} loading={i === 0 ? 'eager' : 'lazy'} />
+        <img key={`${src}-${i}`} src={resolveImageUrl(src)} alt={`${title} — ảnh ${i + 1}`} aria-hidden={i !== current}
+          className={`ws-slide ${i === current ? 'is-active' : ''}`} loading={i === 0 ? 'eager' : 'lazy'}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = DEFAULT_CRAFT_IMAGE; }} />
       )) : <div className="ws-no-images">Chưa có hình ảnh workshop</div>}
       {images.length > 1 && <>
         <button type="button" className="ws-gallery-arrow ws-prev" aria-label="Ảnh trước" onClick={() => setIndex((current + images.length - 1) % images.length)}><ChevronLeft /></button>

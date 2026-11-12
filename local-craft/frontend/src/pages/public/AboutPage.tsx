@@ -36,10 +36,10 @@ const milestones = [
 
 const AboutPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-surface-warm pb-20">
+    <div className="min-h-screen bg-craft-contour pb-20">
       {/* Editorial Hero */}
       <section className="relative bg-deep-earth text-white py-24 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#964824_1px,transparent_1px)] [background-size:16px_16px]" />
+        <div className="absolute inset-0 bg-craft-contour-dark pointer-events-none" aria-hidden="true" />
         
         <div className="max-w-[1280px] mx-auto px-5 md:px-8 lg:px-12 relative z-10 text-center">
           <Badge variant="subtle" size="md" className="mb-6 bg-white/10 text-accent-gold border-white/20">

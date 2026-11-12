@@ -23,7 +23,10 @@ axiosClient.interceptors.request.use(
 axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const reqUrl = String(error.config?.url || '');
+    const isAuthRequest = reqUrl.includes('/auth/login') || reqUrl.includes('/auth/register') || reqUrl.includes('/auth/google');
+    const isOnAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/register');
+    if (error.response?.status === 401 && !isAuthRequest && !isOnAuthPage) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

@@ -6,6 +6,7 @@ interface CartContextType {
   addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
+  syncCartProducts: (products: Product[]) => void;
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
@@ -16,6 +17,7 @@ export const CartContext = createContext<CartContextType>({
   addToCart: () => {},
   removeFromCart: () => {},
   updateQuantity: () => {},
+  syncCartProducts: () => {},
   clearCart: () => {},
   cartTotal: 0,
   cartCount: 0,
@@ -65,6 +67,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }, []);
 
+  const syncCartProducts = useCallback((products: Product[]) => {
+    if (!products.length) return;
+    const byId = new Map(products.map((p) => [p._id, p]));
+    setCartItems((prev) =>
+      prev.map((item) => {
+        const fresh = byId.get(item.product._id);
+        if (!fresh) return item;
+        const clampedQty = fresh.stock > 0 ? Math.min(item.quantity, fresh.stock) : item.quantity;
+        return {
+          ...item,
+          quantity: clampedQty,
+          product: { ...item.product, ...fresh },
+        };
+      })
+    );
+  }, []);
+
   const clearCart = useCallback(() => {
     setCartItems([]);
   }, []);
@@ -81,7 +100,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <CartContext.Provider
-      value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount }}
+      value={{ cartItems, addToCart, removeFromCart, updateQuantity, syncCartProducts, clearCart, cartTotal, cartCount }}
     >
       {children}
     </CartContext.Provider>

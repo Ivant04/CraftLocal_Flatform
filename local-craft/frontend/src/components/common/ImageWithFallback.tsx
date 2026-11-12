@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { DEFAULT_CRAFT_IMAGE, resolveImageUrl } from "../../utils/normalizers";
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackSrc?: string;
@@ -6,17 +7,23 @@ interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElemen
 
 const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
   src,
-  fallbackSrc = "https://placehold.co/600x400?text=No+Image",
+  fallbackSrc = DEFAULT_CRAFT_IMAGE,
   alt,
   ...props
 }) => {
-  const [imgSrc, setImgSrc] = useState(src);
+  const [imgSrc, setImgSrc] = useState(() => (src ? resolveImageUrl(src) : fallbackSrc));
+
+  useEffect(() => {
+    setImgSrc(src ? resolveImageUrl(src) : fallbackSrc);
+  }, [src, fallbackSrc]);
 
   return (
     <img
       src={imgSrc || fallbackSrc}
       alt={alt || "Image"}
-      onError={() => setImgSrc(fallbackSrc)}
+      onError={() => {
+        if (imgSrc !== fallbackSrc) setImgSrc(fallbackSrc);
+      }}
       {...props}
     />
   );

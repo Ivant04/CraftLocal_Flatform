@@ -45,6 +45,27 @@
   --color-muted: #7A6A61;
 }
 
+:root {
+  /* Layer 1: Primitive Design Tokens */
+  --primitive-cream-50: #FAF7F2;
+  --primitive-clay-100: #F5EFEB;
+  --primitive-terracotta-700: #964824;
+  --primitive-terracotta-500: #D97D54;
+  --primitive-earth-900: #3D2B1F;
+  --primitive-earth-950: #2C2017;
+  --primitive-gold-400: #E9C176;
+
+  /* Layer 2: Semantic Tokens */
+  --surface-canvas: var(--primitive-cream-50);
+  --surface-canvas-alt: var(--primitive-clay-100);
+  --surface-card: #FFFFFF;
+  --contour-pattern-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600' fill='none'%3E%3Cg stroke='%23964824' stroke-opacity='0.068' stroke-width='1.25'%3E%3Cpath d='M0 84 C140 42, 235 142, 360 112 C468 86, 522 62, 600 84'/%3E%3Cpath d='M0 124 C142 82, 238 182, 364 150 C472 122, 524 102, 600 124'/%3E%3Cpath d='M132 252 C142 162, 242 114, 350 138 C444 158, 484 232, 454 316 C424 398, 314 428, 212 394 C138 368, 122 328, 132 252 Z'/%3E%3Cpath d='M178 256 C188 190, 260 156, 338 174 C404 190, 434 246, 410 304 C386 364, 304 384, 234 356 C184 338, 170 308, 178 256 Z'/%3E%3Cpath d='M222 260 C230 216, 278 194, 326 206 C368 218, 388 254, 372 294 C356 332, 302 344, 258 326 C226 314, 216 292, 222 260 Z'/%3E%3Cpath d='M266 264 C272 242, 296 232, 316 238 C336 246, 344 264, 334 282 C326 298, 298 304, 278 294 C266 288, 262 278, 266 264 Z'/%3E%3Cpath d='M480 230 C495 155, 575 125, 650 150 C715 172, 740 245, 710 315 C680 385, 590 405, 520 370 C475 346, 468 290, 480 230 Z'/%3E%3Cpath d='M-120 230 C-105 155, -25 125, 50 150 C115 172, 140 245, 110 315 C80 385, -10 405, -80 370 C-125 346, -132 290, -120 230 Z'/%3E%3C/g%3E%3Cg stroke='%233D2B1F' stroke-opacity='0.045' stroke-width='1.1'%3E%3Cpath d='M0 492 C132 452, 212 544, 346 514 C462 488, 518 468, 600 492'/%3E%3Cpath d='M0 534 C136 494, 216 584, 350 552 C466 524, 522 508, 600 534'/%3E%3Cpath d='M520 235 C532 185, 585 166, 635 184 C678 200, 694 246, 674 294 C654 342, 594 354, 548 332 C518 316, 512 276, 520 235 Z'/%3E%3Cpath d='M-80 235 C-68 185, -15 166, 35 184 C78 200, 94 246, 74 294 C54 342, -6 354, -52 332 C-82 316, -88 276, -80 235 Z'/%3E%3Cpath d='M95 552 C110 505, 175 488, 225 508 C272 528, 286 575, 258 618 C228 662, 154 672, 110 638 C82 616, 82 586, 95 552 Z'/%3E%3Cpath d='M95 -48 C110 -95, 175 -112, 225 -92 C272 -72, 286 -25, 258 18 C228 62, 154 72, 110 38 C82 16, 82 -14, 95 -48 Z'/%3E%3C/g%3E%3C/svg%3E");
+  --contour-pattern-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600' fill='none'%3E%3Cg stroke='%23E9C176' stroke-opacity='0.085' stroke-width='1.2'%3E%3Cpath d='M0 84 C140 42, 235 142, 360 112 C468 86, 522 62, 600 84'/%3E%3Cpath d='M132 252 C142 162, 242 114, 350 138 C444 158, 484 232, 454 316 C424 398, 314 428, 212 394 C138 368, 122 328, 132 252 Z'/%3E%3Cpath d='M178 256 C188 190, 260 156, 338 174 C404 190, 434 246, 410 304 C386 364, 304 384, 234 356 C184 338, 170 308, 178 256 Z'/%3E%3Cpath d='M222 260 C230 216, 278 194, 326 206 C368 218, 388 254, 372 294 C356 332, 302 344, 258 326 C226 314, 216 292, 222 260 Z'/%3E%3C/g%3E%3Cg stroke='%23FAF7F2' stroke-opacity='0.055' stroke-width='1.05'%3E%3Cpath d='M0 492 C132 452, 212 544, 346 514 C462 488, 518 468, 600 492'/%3E%3Cpath d='M480 230 C495 155, 575 125, 650 150 C715 172, 740 245, 710 315 C680 385, 590 405, 520 370 C475 346, 468 290, 480 230 Z'/%3E%3Cpath d='M-120 230 C-105 155, -25 125, 50 150 C115 172, 140 245, 110 315 C80 385, -10 405, -80 370 C-125 346, -132 290, -120 230 Z'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* Layer 3: Component Tokens */
+  --section-hatch-color: rgba(150, 72, 36, 0.36);
+}
+
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
@@ -106,4 +127,39 @@
 .card-hover-lift:hover {
   transform: translateY(-4px);
   box-shadow: 0 16px 32px -8px rgba(61, 43, 31, 0.12);
+}
+
+/* Heritage Topographic Contour Watermark (Van chim) */
+.bg-craft-contour {
+  background-color: var(--surface-canvas);
+  background-image: var(--contour-pattern-light);
+  background-size: 600px 600px;
+  background-repeat: repeat;
+}
+
+.bg-craft-contour-alt {
+  background-color: var(--surface-canvas-alt);
+  background-image: var(--contour-pattern-light);
+  background-size: 600px 600px;
+  background-repeat: repeat;
+}
+
+.bg-craft-contour-dark {
+  background-image: var(--contour-pattern-dark);
+  background-size: 600px 600px;
+  background-repeat: repeat;
+}
+
+/* Decorative diagonal hatch accent matching section editorial style */
+.craft-hatch-accent {
+  width: 68px;
+  height: 8px;
+  background-image: repeating-linear-gradient(
+    -55deg,
+    var(--section-hatch-color) 0,
+    var(--section-hatch-color) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+  border-radius: 9999px;
 }

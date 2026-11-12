@@ -15,8 +15,8 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
 
 export const getMyBookings = asyncHandler(async (req: Request, res: Response) => {
   const bookings = await Booking.find({ touristId: req.user!._id })
-    .populate('workshopId', 'title images location')
-    .populate('timeslotId', 'startTime endTime')
+    .populate('workshopId', 'title images locationLabel address price')
+    .populate('timeslotId', 'startTime endTime price')
     .populate('hostId', 'fullName')
     .sort({ createdAt: -1 });
   const reviewedIds = new Set((await Review.distinct('bookingId', { touristId: req.user!._id })).map(String));
@@ -28,8 +28,8 @@ export const getMyBookings = asyncHandler(async (req: Request, res: Response) =>
 
 export const getBookingById = asyncHandler(async (req: Request, res: Response) => {
   const booking = await Booking.findOne({ _id: req.params.id, touristId: req.user!._id })
-    .populate('workshopId', 'title images')
-    .populate('timeslotId', 'startTime endTime')
+    .populate('workshopId', 'title images locationLabel address price')
+    .populate('timeslotId', 'startTime endTime price')
     .populate('hostId', 'fullName');
   if (!booking) return sendError(res, 'Booking không tồn tại', 404);
   sendSuccess(res, 'Lấy thông tin booking', booking);
@@ -37,7 +37,8 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response) =
 
 export const getBookingTicket = asyncHandler(async (req: Request, res: Response) => {
   const booking = await Booking.findOne({ _id: req.params.id, touristId: req.user!._id })
-    .populate('workshopId', 'title images');
+    .populate('workshopId', 'title images locationLabel address')
+    .populate('timeslotId', 'startTime endTime');
   if (!booking) return sendError(res, 'Booking không tồn tại', 404);
 
   const ticket = await Ticket.findOne({ bookingId: booking._id });
@@ -47,9 +48,12 @@ export const getBookingTicket = asyncHandler(async (req: Request, res: Response)
   sendSuccess(res, 'Lấy thông tin vé thành công', {
     ...ticket.toObject(),
     workshopId: booking.workshopId,
+    timeslotId: booking.timeslotId,
     bookingCode: booking.bookingCode,
     bookingStatus: booking.bookingStatus,
     quantity: booking.quantity,
+    totalPrice: booking.totalPrice,
+    customerInfo: booking.customerInfo,
   });
 });
 
