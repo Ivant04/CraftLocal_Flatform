@@ -32,6 +32,7 @@ interface ItineraryModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPrompt?: string;
+  initialDestination?: string;
 }
 
 const TYPE_CONFIG: Record<
@@ -64,6 +65,7 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
   isOpen,
   onClose,
   initialPrompt,
+  initialDestination,
 }) => {
   const [promptInput, setPromptInput] = useState<string>('');
   const [itinerary, setItinerary] = useState<OneDayItinerary | null>(null);
@@ -111,13 +113,21 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
   // Initial trigger on open
   useEffect(() => {
     if (isOpen) {
-      const defaultText =
-        initialPrompt ||
-        'Đi Hội An 1 ngày: làm gốm Thanh Hà, dệt lụa và cà phê phố cổ';
-      setPromptInput(defaultText);
-      handleGenerate(defaultText);
+      const explicitPrompt = (initialPrompt || initialDestination || '').trim();
+      if (explicitPrompt) {
+        setPromptInput(explicitPrompt);
+        handleGenerate(explicitPrompt);
+      } else {
+        setPromptInput('');
+        setItinerary(null);
+        setIsLoading(false);
+      }
+    } else {
+      setShowCafePanel(false);
+      setEditingStop(null);
+      setIsAddingNew(false);
     }
-  }, [isOpen, initialPrompt]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, initialPrompt, initialDestination]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load AI Cafe suggestions
   const handleLoadCafes = async () => {
@@ -705,8 +715,45 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
               </div>
             </>
           ) : (
-            <div className="py-16 text-center text-xs text-[#7A6255]">
-              Không thể tải lịch trình. Vui lòng nhập nội dung mong muốn và bấm Tạo lịch trình.
+            <div className="py-12 px-4 flex flex-col items-center justify-center text-center max-w-lg mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#964824]/10 to-amber-500/10 border border-[#964824]/20 text-[#964824] flex items-center justify-center mb-4 shadow-xs">
+                <Compass size={32} className="text-[#964824]" />
+              </div>
+              <h3 className="font-bold text-base md:text-lg text-[#3D2B1F] mb-1.5 font-playfair">
+                Nhập mong muốn để AI thiết kế lịch trình 1 ngày
+              </h3>
+              <p className="text-xs md:text-sm text-[#7A6255] leading-relaxed mb-6">
+                Chỉ cần ghi sở thích hoặc kế hoạch của bạn vào ô tìm kiếm ở trên và nhấn <strong>Tạo lịch trình</strong>. AI sẽ tự động phân tích thời gian di chuyển, chọn xưởng thủ công và sắp xếp chặng dừng chân nghỉ ngơi hợp lý.
+              </p>
+
+              {/* Gợi ý mẫu để người dùng tham khảo hoặc bấm chọn nhanh */}
+              <div className="w-full text-left space-y-2.5">
+                <p className="text-[11px] font-semibold text-[#8C7A70] uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-amber-600" />
+                  <span>Gợi ý mẫu để bạn thử:</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    'Đi Hội An 1 ngày: làm gốm Thanh Hà, dệt lụa và cà phê phố cổ',
+                    'Trải nghiệm mây tre đan Cẩm Thanh và ẩm thực làng rau Trà Quế',
+                    'Điêu khắc đá Non Nước Đà Nẵng kết hợp cà phê ngắm biển',
+                    'Khám phá tranh sơn mài, trà đạo truyền thống và dạo phố cổ',
+                  ].map((sample, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setPromptInput(sample);
+                      }}
+                      className="text-left p-2.5 rounded-xl bg-white border border-[#EAD8CC] hover:border-[#964824] hover:bg-[#FAF7F2] text-[#5A4A41] transition-all cursor-pointer shadow-2xs group"
+                    >
+                      <span className="font-medium text-[#3D2B1F] group-hover:text-[#964824] line-clamp-2">
+                        {sample}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -721,14 +768,16 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
             <button
               type="button"
               onClick={openAddModal}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold text-[#3D2B1F] bg-[#FAF7F2] hover:bg-[#F2ECE4] border border-[#EAD8CC] transition-colors cursor-pointer"
+              disabled={!itinerary}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-[#3D2B1F] bg-[#FAF7F2] hover:bg-[#F2ECE4] border border-[#EAD8CC] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               + Thêm hoạt động
             </button>
             <button
               type="button"
               onClick={handleCopyItinerary}
-              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#964824] hover:bg-[#7D3B1D] text-white shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+              disabled={!itinerary}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-[#964824] hover:bg-[#7D3B1D] text-white shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {copied ? <Check size={14} /> : <Copy size={14} />}
               <span>{copied ? 'Đã sao chép lịch trình' : 'Sao chép để lưu'}</span>

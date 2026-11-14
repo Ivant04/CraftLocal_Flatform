@@ -221,9 +221,9 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={() => {
-                            const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-                            openItineraryModal(lastUser?.content || 'Đi Hội An 1 ngày: làm gốm, dệt lụa và cà phê nghỉ ngơi');
-                          }}
+                const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+                openItineraryModal(lastUser?.content);
+              }}
               className="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title="Lập lịch trình 1 ngày bằng AI"
               aria-label="Lịch trình 1 ngày"
