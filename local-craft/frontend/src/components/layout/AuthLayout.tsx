@@ -1,30 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import BrandLogo from '../common/BrandLogo';
+import heroWorkshopImg from '../../assets/images/hero-workshop.jpg';
+import potteryWorkshopImg from '../../assets/images/pottery-workshop.jpg';
+import lanternWorkshopImg from '../../assets/images/lantern-workshop.jpg';
+import textileWorkshopImg from '../../assets/images/textile-workshop.jpg';
+import artisanStoryImg from '../../assets/images/artisan-story.jpg';
 
 const slides = [
   {
-    image: '/src/assets/images/hero-workshop.jpg',
+    image: heroWorkshopImg,
     title: 'Khám phá Workshop Văn hóa',
     subtitle: 'Trải nghiệm nghề thủ công truyền thống cùng nghệ nhân địa phương',
   },
   {
-    image: '/src/assets/images/pottery-workshop.jpg',
+    image: potteryWorkshopImg,
     title: 'Nghệ thuật Gốm sứ',
     subtitle: 'Tự tay tạo nên những tác phẩm gốm độc đáo tại làng nghề',
   },
   {
-    image: '/src/assets/images/lantern-workshop.jpg',
+    image: lanternWorkshopImg,
     title: 'Đèn lồng Hội An',
     subtitle: 'Học cách làm đèn lồng truyền thống dưới bàn tay nghệ nhân',
   },
   {
-    image: '/src/assets/images/textile-workshop.jpg',
+    image: textileWorkshopImg,
     title: 'Dệt vải truyền thống',
     subtitle: 'Khám phá nghệ thuật dệt vải với những họa tiết văn hóa đặc sắc',
   },
   {
-    image: '/src/assets/images/artisan-story.jpg',
+    image: artisanStoryImg,
     title: 'Câu chuyện Nghệ nhân',
     subtitle: 'Lắng nghe và kết nối với những người giữ hồn văn hóa Việt',
   },

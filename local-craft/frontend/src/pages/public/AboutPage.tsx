@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart, Globe, Users, Star, Sparkles, ShieldCheck, Compass, ArrowRight } from 'lucide-react';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
+import storyArtisanImg from '../../assets/images/story-artisan.jpg';
 
 const values = [
   { 
@@ -103,9 +104,12 @@ const AboutPage: React.FC = () => {
           <div className="relative">
             <div className="rounded-3xl overflow-hidden shadow-xl aspect-4/3 border-4 border-white">
               <img 
-                src="/src/assets/images/story-artisan.jpg" 
+                src={storyArtisanImg} 
                 alt="Nghệ nhân Việt Nam" 
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dqkclqqlw/image/upload/v1783659948/craftlocal/hero/artisan-story.jpg';
+                }}
               />
             </div>
             <div className="absolute -bottom-6 -left-6 bg-deep-earth text-white p-5 rounded-2xl max-w-xs shadow-xl hidden sm:block">

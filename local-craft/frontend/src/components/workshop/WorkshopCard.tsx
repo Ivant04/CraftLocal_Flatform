@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, Clock, MapPin, Sparkles } from 'lucide-react';
 import type { Workshop } from '../../types/workshop.type';
 import { formatCurrencyShort } from '../../utils/formatCurrency';
+import potteryWorkshopImg from '../../assets/images/pottery-workshop.jpg';
 
 interface WorkshopCardProps {
   workshop: Workshop;
@@ -25,10 +26,13 @@ export const WorkshopCard: React.FC<WorkshopCardProps> = ({ workshop, className 
       {/* Thumbnail Container */}
       <div className="relative aspect-[16/10] overflow-hidden bg-[#FAF7F2]">
         <img
-          src={workshop.images?.[0] || '/src/assets/images/pottery-workshop.jpg'}
+          src={workshop.images?.[0] || potteryWorkshopImg}
           alt={workshop.title}
           className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700 ease-out"
           loading="lazy"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = potteryWorkshopImg;
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 opacity-40 group-hover:opacity-70 transition-opacity duration-300" />
 

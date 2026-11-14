@@ -2,38 +2,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import SearchBox from './SearchBox';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import heroWorkshopImg from '../../assets/images/hero-workshop.jpg';
+import potteryWorkshopImg from '../../assets/images/pottery-workshop.jpg';
+import lanternWorkshopImg from '../../assets/images/lantern-workshop.jpg';
+import textileWorkshopImg from '../../assets/images/textile-workshop.jpg';
+import artisanStoryImg from '../../assets/images/artisan-story.jpg';
 
 const slides = [
   {
-    image: '/src/assets/images/hero-workshop.jpg',
+    image: heroWorkshopImg,
     tag: 'Di sản & Làng nghề',
     title: 'Trải nghiệm văn hóa',
     subtitle: 'cùng nghệ nhân địa phương',
     desc: 'Đặt lịch trải nghiệm thực tế, trực tiếp chạm tay vào đất sét, sợi tơ và mang về những tác phẩm thủ công mang đậm linh hồn Việt.',
   },
   {
-    image: '/src/assets/images/pottery-workshop.jpg',
+    image: potteryWorkshopImg,
     tag: 'Gốm sứ Bát Tràng',
     title: 'Nghệ thuật vuốt gốm',
     subtitle: 'truyền thống ngàn năm',
     desc: 'Tự tay xoay bàn chuốt, nặn hình và sáng tạo men gốm dưới sự chỉ bảo tận tình của các nghệ nhân gạo cội.',
   },
   {
-    image: '/src/assets/images/lantern-workshop.jpg',
+    image: lanternWorkshopImg,
     tag: 'Phố cổ Hội An',
     title: 'Sắc màu lồng đèn',
     subtitle: 'di sản văn hóa sống',
     desc: 'Học cách uốn nan tre, dán lụa Hà Đông và mang một góc lung linh của phố Hội về ngôi nhà của bạn.',
   },
   {
-    image: '/src/assets/images/textile-workshop.jpg',
+    image: textileWorkshopImg,
     tag: 'Dệt thổ cẩm Tây Bắc',
     title: 'Nghệ thuật sợi tơ',
     subtitle: 'hoa văn của đại ngàn',
     desc: 'Khám phá kỹ thuật nhuộm chàm tự nhiên và dệt vải lanh cùng đồng bào dân tộc vùng cao.',
   },
   {
-    image: '/src/assets/images/artisan-story.jpg',
+    image: artisanStoryImg,
     tag: 'Kết nối con người',
     title: 'Câu chuyện nghệ nhân',
     subtitle: 'giữ lửa nghề truyền thống',
