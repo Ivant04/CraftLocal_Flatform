@@ -1,4 +1,5 @@
 import * as ID from "./ids";
+import { CLOUDINARY_WORKSHOPS } from "./cloudinaryAssets";
 const ws = (
   i: number,
   hId: any,
@@ -53,12 +54,12 @@ const ws = (
   maxGuestsPerSlot: mx,
   difficulty: diff,
   status: "ACTIVE",
-  images: [
+  images: CLOUDINARY_WORKSHOPS[sl]?.images || [
     `/images/workshop-${sl}-01.jpg`,
     `/images/workshop-${sl}-02.jpg`,
     `/images/workshop-${sl}-03.jpg`,
   ],
-  thumbnail: `/images/workshop-${sl}-thumb.jpg`,
+  thumbnail: CLOUDINARY_WORKSHOPS[sl]?.thumbnail || `/images/workshop-${sl}-thumb.jpg`,
   includedItems: ["Nguyên vật liệu", "Hướng dẫn viên", "Nước uống"],
   requiredItems: ["Không yêu cầu đặc biệt"],
   languages: ["Tiếng Việt", "English"],

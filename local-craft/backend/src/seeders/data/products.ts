@@ -1,4 +1,5 @@
 import * as ID from "./ids";
+import { CLOUDINARY_PRODUCTS } from "./cloudinaryAssets";
 const oa = (
   al: string,
   w: string,
@@ -47,12 +48,12 @@ const pr = (
   origin: or,
   originAddress: oAddr,
   weight: w,
-  images: [
+  images: CLOUDINARY_PRODUCTS[sl]?.images || [
     `/images/product-${sl}-01.jpg`,
     `/images/product-${sl}-02.jpg`,
     `/images/product-${sl}-03.jpg`,
   ],
-  thumbnail: `/images/product-${sl}-thumb.jpg`,
+  thumbnail: CLOUDINARY_PRODUCTS[sl]?.thumbnail || `/images/product-${sl}-thumb.jpg`,
   status: "ACTIVE",
   averageRating: ar,
   totalReviews: tr,
