@@ -256,8 +256,8 @@ export const getPayOSPaymentStatus = asyncHandler(async (req: Request, res: Resp
 
   if (!payment) return sendError(res, 'Payment không tồn tại', 404);
 
-  // Check ownership (trừ ADMIN)
-  if (req.user!.role !== 'ADMIN' && payment.userId.toString() !== req.user!._id.toString()) {
+  // Check ownership if user is logged in (trừ ADMIN)
+  if (req.user && req.user.role !== 'ADMIN' && payment.userId.toString() !== req.user._id.toString()) {
     return sendError(res, 'Không có quyền xem payment này', 403);
   }
 

@@ -49,3 +49,20 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     sendError(res, 'Token không hợp lệ hoặc đã hết hạn', 401);
   }
 };
+
+export const optionalAuthMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string; role: string };
+      const user = await User.findById(decoded.userId);
+      if (user && user.status === 'ACTIVE') {
+        req.user = user;
+      }
+    }
+  } catch {
+    // Ignore invalid or expired token for optional auth
+  }
+  next();
+};

@@ -28,6 +28,8 @@ import RegisterPage from '../pages/auth/RegisterPage';
 import CartPage from '../pages/tourist/CartPage';
 import CheckoutPage from '../pages/tourist/CheckoutPage';
 import PaymentResultPage from '../pages/tourist/PaymentResultPage';
+import PaymentPayOSReturnPage from '../pages/tourist/PaymentPayOSReturnPage';
+import PaymentPayOSCancelPage from '../pages/tourist/PaymentPayOSCancelPage';
 import MyBookingsPage from '../pages/tourist/MyBookingsPage';
 import TicketPage from '../pages/tourist/TicketPage';
 import MyOrdersPage from '../pages/tourist/MyOrdersPage';
@@ -71,7 +73,9 @@ const AppRoutes: React.FC = () => (
       {/* Tourist Routes (inside MainLayout) */}
       <Route path="/cart" element={<CartPage />} />
       <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-      <Route path="/payment-result" element={<PaymentResultPage />} />
+      <Route path="/payment/payos-return" element={<PaymentPayOSReturnPage />} />
+      <Route path="/payment/payos-cancel" element={<PaymentPayOSCancelPage />} />
+      <Route path="/payment-result" element={<PaymentPayOSReturnPage />} />
       <Route path="/my-bookings" element={<ProtectedRoute><MyBookingsPage /></ProtectedRoute>} />
       <Route path="/my-bookings/:id/ticket" element={<ProtectedRoute><TicketPage /></ProtectedRoute>} />
       <Route path="/my-orders" element={<ProtectedRoute><MyOrdersPage /></ProtectedRoute>} />
@@ -115,6 +119,9 @@ const AppRoutes: React.FC = () => (
       <Route path="/tour-guide/check-in" element={<QRCheckInPage />} />
       <Route path="/tour-guide/trip-progress/:id" element={<TripProgressPage />} />
     </Route>
+
+    {/* Catch-all Fallback */}
+    <Route path="*" element={<HomePage />} />
   </Routes>
 );
 
