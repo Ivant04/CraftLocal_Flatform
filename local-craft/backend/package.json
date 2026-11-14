@@ -11,6 +11,7 @@
     "test": "node --experimental-strip-types --test test/*.test.mjs ../shared/*.test.mjs ../frontend/test/*.test.mjs"
   },
   "dependencies": {
+    "@payos/node": "^2.0.6",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
