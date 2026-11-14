@@ -42,9 +42,13 @@ services:
         sync: false
       - key: PAYOS_CANCEL_URL
         sync: false
-      - key: MAIL_USER
+      - key: CHAT_API_KEY
         sync: false
-      - key: MAIL_PASS
+      - key: CHAT_API_BASE_URL
+        value: https://api.openai.com/v1
+      - key: CHAT_MODEL
+        value: gpt-4o-mini
+      - key: GOOGLE_CLIENT_ID
         sync: false
 
   # ==========================================
@@ -64,4 +68,5 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
-
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
