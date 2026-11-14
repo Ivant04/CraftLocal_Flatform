@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Calendar, Package, Sparkles } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Calendar, Package, Sparkles, MapPin } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
+import { useNearbyModal } from '../../context/NearbyModalContext';
 import { getRoleRedirectPath } from '../../utils/roleRedirect';
 import { ROLE_LABELS } from '../../utils/constants';
 import BrandLogo from '../common/BrandLogo';
@@ -12,6 +13,7 @@ const Header: React.FC = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount } = useCart();
+  const { openNearbyModal, openItineraryModal } = useNearbyModal();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -47,6 +49,25 @@ const Header: React.FC = () => {
             <NavLink to="/about" className={navLinkClass}>
               Về chúng tôi
             </NavLink>
+            <button
+              type="button"
+              onClick={() => openItineraryModal()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#3D2B1F] bg-[#FAF7F2] hover:bg-[#964824] hover:text-white rounded-xl transition-all duration-200 cursor-pointer border border-[#EAD8CC] hover:border-[#964824] ml-1"
+              title="Gợi ý lịch trình 1 ngày trải nghiệm làng nghề & cà phê nghỉ ngơi"
+            >
+              <Calendar size={13} className="shrink-0 text-[#964824]" />
+              <span>Lịch trình 1 ngày</span>
+            </button>
+            <button
+              type="button"
+              onClick={openNearbyModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#964824] bg-[#964824]/10 hover:bg-[#964824] hover:text-white rounded-xl transition-all duration-200 cursor-pointer border border-[#964824]/20 ml-1"
+              title="Trò chuyện với Trợ lý AI CraftLocal - Đề xuất vị trí & thời tiết"
+            >
+              <Sparkles size={13} className="shrink-0 text-[#964824]" />
+              <span>Trợ lý AI</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#964824] animate-pulse" />
+            </button>
           </nav>
 
           {/* Actions */}
@@ -200,6 +221,39 @@ const Header: React.FC = () => {
             >
               Về chúng tôi
             </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                openItineraryModal();
+              }}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold text-[#3D2B1F] bg-[#FAF7F2] rounded-xl cursor-pointer my-1 border border-[#EAD8CC]"
+            >
+              <span className="flex items-center gap-2">
+                <Calendar size={16} className="text-[#964824]" />
+                <span>Lịch trình 1 ngày (AI)</span>
+              </span>
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                Mới
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileOpen(false);
+                openNearbyModal();
+              }}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-bold text-[#964824] bg-[#964824]/10 rounded-xl cursor-pointer my-1"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles size={16} />
+                <span>Trợ lý AI Làng nghề</span>
+              </span>
+              <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#964824] text-white">
+                AI
+              </span>
+            </button>
 
             {isAuthenticated && user ? (
               <div className="pt-2 border-t border-[#EAD8CC]">

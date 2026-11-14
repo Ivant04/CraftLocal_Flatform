@@ -87,7 +87,7 @@ const AssignGuidePage: React.FC = () => {
               <option value="">Chọn khung giờ</option>
               {unassigned.map((ts) => (
                 <option key={ts._id} value={ts._id}>
-                  {ts.workshopTitle} - {ts.date} {formatTime(ts.startTime)}
+                  {ts.workshopTitle} - {ts.date} {ts.startTimeLabel || formatTime(ts.startTime)}
                 </option>
               ))}
             </select>
@@ -137,7 +137,7 @@ const AssignGuidePage: React.FC = () => {
                     <td className="p-4">{ts.workshopTitle}</td>
                     <td className="p-4">{ts.date}</td>
                     <td className="p-4">
-                      {formatTime(ts.startTime)} - {formatTime(ts.endTime)}
+                      {ts.startTimeLabel && ts.endTimeLabel ? `${ts.startTimeLabel} - ${ts.endTimeLabel}` : `${formatTime(ts.startTime)} - ${formatTime(ts.endTime)}`}
                     </td>
                     <td className="p-4 font-medium text-primary">
                       {ts.tourGuideName}

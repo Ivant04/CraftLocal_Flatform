@@ -62,13 +62,31 @@ const ManageTimeslotsPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
+    if (!formState.workshopId) {
+      setError('Vui lòng chọn workshop.');
+      return;
+    }
+    if (!formState.startTime || !formState.endTime) {
+      setError('Vui lòng chọn thời gian bắt đầu và kết thúc.');
+      return;
+    }
+    const start = new Date(formState.startTime);
+    const end = new Date(formState.endTime);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      setError('Thời gian không hợp lệ.');
+      return;
+    }
+    if (end <= start) {
+      setError('Thời gian kết thúc phải sau thời gian bắt đầu.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
       await timeslotApi.create({
         workshopId: formState.workshopId,
-        startTime: new Date(formState.startTime).toISOString(),
-        endTime: new Date(formState.endTime).toISOString(),
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
         totalSlots: Number(formState.totalSlots),
         price: Number(formState.price),
       });
@@ -125,7 +143,11 @@ const ManageTimeslotsPage: React.FC = () => {
                 <tr key={ts._id} className="border-b border-soft-clay/50">
                   <td className="p-4 font-medium">{ts.workshopTitle}</td>
                   <td className="p-4">{ts.date}</td>
-                  <td className="p-4">{formatTime(ts.startTime)} - {formatTime(ts.endTime)}</td>
+                  <td className="p-4 font-medium text-deep-earth">
+                    {ts.startTimeLabel && ts.endTimeLabel
+                      ? `${ts.startTimeLabel} - ${ts.endTimeLabel}`
+                      : `${formatTime(ts.startTime)} - ${formatTime(ts.endTime)}`}
+                  </td>
                   <td className="p-4">{ts.bookedSlots}/{ts.totalSlots}</td>
                   <td className="p-4">{ts.tourGuideName || <span className="text-amber-600 text-xs">Chưa gán</span>}</td>
                   <td className="p-4"><span className={`px-2 py-1 rounded-full text-xs font-semibold ${ts.status === 'AVAILABLE' ? 'bg-green-100 text-green-700' : ts.status === 'FULL' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{TIMESLOT_STATUS_LABELS[ts.status] || ts.status}</span></td>

@@ -21,6 +21,7 @@ import reviewRoutes from './routes/review.routes';
 import tourGuideRoutes from './routes/tourGuide.routes';
 import categoryRoutes from './routes/category.routes';
 import uploadRoutes from './routes/upload.routes';
+import recommendationRoutes from './routes/recommendation.routes';
 
 const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/tour-guide', tourGuideRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // 404 handler
 app.use((_req, res) => {

@@ -1,3 +1,5 @@
+
+
 // Test-only entrypoint: mount production public routes without enabling any database writes.
 import fs from 'node:fs';
 import { registerHooks, createRequire } from 'node:module';

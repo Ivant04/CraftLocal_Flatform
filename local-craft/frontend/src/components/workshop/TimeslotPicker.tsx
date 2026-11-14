@@ -26,7 +26,11 @@ const TimeslotPicker: React.FC<TimeslotPickerProps> = ({ timeslots, selected, on
         <div className="flex justify-between items-center">
           <div>
             <p className="font-medium">{ts.date}</p>
-            <p className="text-xs opacity-70">{formatTime(ts.startTime)} - {formatTime(ts.endTime)}</p>
+            <p className="text-xs opacity-70">
+              {ts.startTimeLabel && ts.endTimeLabel
+                ? `${ts.startTimeLabel} - ${ts.endTimeLabel}`
+                : `${formatTime(ts.startTime)} - ${formatTime(ts.endTime)}`}
+            </p>
           </div>
           <span className={`text-xs font-semibold ${ts.status === 'FULL' ? 'text-red-500' : 'text-green-600'}`}>
             {ts.status === 'FULL' ? 'Full' : `${ts.availableSlots} left`}
