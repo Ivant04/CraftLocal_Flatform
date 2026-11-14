@@ -53,7 +53,6 @@ services:
   - type: web
     name: craftlocal-frontend
     runtime: static
-    plan: free
     rootDir: local-craft/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
