@@ -10,6 +10,7 @@ export interface User {
   status: UserStatus;
   avatar?: string;
   hostId?: string; // For tour guides - which host they belong to
+  assignedSlotsCount?: number;
   createdAt: string;
   updatedAt: string;
 }

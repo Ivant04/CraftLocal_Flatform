@@ -36,16 +36,28 @@ export const resolveImageList = (images?: unknown, fallbackSingle?: string): str
 
 const formatDateOnly = (iso?: string): string => {
   if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return String(iso);
-  return d.toISOString().split('T')[0];
+  const str = String(iso).trim();
+  if (!str || str.toLowerCase() === 'invalid date') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const d = new Date(str);
+  if (Number.isNaN(d.getTime())) return str;
+  try {
+    return d.toLocaleDateString('en-CA');
+  } catch {
+    return d.toISOString().split('T')[0];
+  }
 };
 
 const formatTimeOnly = (iso?: string): string => {
   if (!iso) return '';
-  if (/^\d{2}:\d{2}/.test(iso)) return iso.slice(0, 5);
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return String(iso);
+  const str = String(iso).trim();
+  if (!str || str.toLowerCase() === 'invalid date') return '';
+  if (/^\d{1,2}:\d{2}/.test(str)) {
+    const parts = str.split(':');
+    return `${parts[0].padStart(2, '0')}:${parts[1].slice(0, 2)}`;
+  }
+  const d = new Date(str);
+  if (Number.isNaN(d.getTime())) return str;
   return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
 };
 

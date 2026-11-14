@@ -38,3 +38,7 @@ local-craft/backend/env
 
 # Local test captures and reports
 Report/test-results/
+
+# Agent configuration
+.agents/
+local-craft/.agents/
