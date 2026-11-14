@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, HeartHandshake, ShieldCheck, Sparkles } from 'lucide-react';
+import artisanStoryImg from '../../assets/images/artisan-story.jpg';
 
 const StorySection: React.FC = () => (
   <section className="py-20 md:py-28 max-w-[1280px] mx-auto px-5 md:px-8 lg:px-16 overflow-hidden">
@@ -9,9 +10,12 @@ const StorySection: React.FC = () => (
       <div className="relative">
         <div className="relative rounded-3xl overflow-hidden shadow-[0_24px_60px_rgba(61,43,31,0.14)] border-4 border-white">
           <img
-            src="/src/assets/images/artisan-story.jpg"
+            src={artisanStoryImg}
             alt="Câu chuyện nghệ nhân"
             className="w-full h-[380px] sm:h-[460px] object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dqkclqqlw/image/upload/v1783659948/craftlocal/hero/artisan-story.jpg';
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           
