@@ -62,6 +62,10 @@ services:
         sync: false
       - key: MAIL_PASS
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
 
   # ==========================================
   # 2. Frontend Static Site (Vite React SPA)

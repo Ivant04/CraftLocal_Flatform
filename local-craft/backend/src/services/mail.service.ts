@@ -92,9 +92,72 @@ export class MailService {
       return false;
     }
 
+    // 1. Ưu tiên gửi qua Resend HTTP REST API (Cổng 443 - Vượt qua rào cản firewall của Render Free)
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      try {
+        const fromEmail = process.env.RESEND_FROM || 'CraftLocal <onboarding@resend.dev>';
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [to],
+            subject,
+            html,
+          }),
+        });
+
+        const resData: any = await response.json();
+        if (!response.ok) {
+          throw new Error(resData?.message || JSON.stringify(resData));
+        }
+
+        console.log(`✅ [MailService - Resend API] Đã gửi email thành công tới: ${to} (ID: ${resData.id})`);
+        return true;
+      } catch (err: any) {
+        console.error(`❌ [MailService - Resend API] Lỗi gửi tới ${to}:`, err.message);
+      }
+    }
+
+    // 2. Hoặc gửi qua Brevo HTTP REST API (Cổng 443 - Miễn phí 300 mail/ngày, hoạt động 100% trên Render Free)
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    if (brevoApiKey) {
+      try {
+        const senderEmail = process.env.BREVO_SENDER_EMAIL || env.MAIL_USER || 'vaductai2905@gmail.com';
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: 'CraftLocal Vietnam', email: senderEmail },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+          }),
+        });
+
+        const resData: any = await response.json();
+        if (!response.ok) {
+          throw new Error(resData?.message || JSON.stringify(resData));
+        }
+
+        console.log(`✅ [MailService - Brevo API] Đã gửi email thành công tới: ${to} (ID: ${resData.messageId})`);
+        return true;
+      } catch (err: any) {
+        console.error(`❌ [MailService - Brevo API] Lỗi gửi tới ${to}:`, err.message);
+      }
+    }
+
+    // 3. Fallback: SMTP Nodemailer (Hoạt động trên Localhost hoặc Render có mở cổng)
     const mailer = getTransporter();
     if (!mailer) {
-      console.log(`📧 [Mock Mail] Chưa cấu hình MAIL_USER/MAIL_PASS trong .env`);
+      console.log(`📧 [Mock Mail] Chưa cấu hình RESEND_API_KEY, BREVO_API_KEY hoặc MAIL_USER/MAIL_PASS`);
       console.log(`   ➡️ TO: ${to}`);
       console.log(`   ➡️ SUBJECT: ${subject}`);
       return true;
@@ -108,10 +171,10 @@ export class MailService {
         subject,
         html,
       });
-      console.log(`✅ [MailService] Đã gửi email thành công tới: ${to} (Subject: ${subject})`);
+      console.log(`✅ [MailService - SMTP] Đã gửi email thành công tới: ${to} (Subject: ${subject})`);
       return true;
     } catch (error: any) {
-      console.error(`❌ [MailService] Lỗi khi gửi email tới ${to}:`, error.message);
+      console.error(`❌ [MailService - SMTP] Lỗi khi gửi email tới ${to}:`, error.message);
       return false;
     }
   }
