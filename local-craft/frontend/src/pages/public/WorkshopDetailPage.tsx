@@ -63,34 +63,68 @@ function WorkshopDetailContent({ id }: { id: string }) {
   catch (error) { quoteError = (error as Error).message; }
   const category = typeof workshop.categoryId === 'object' ? workshop.categoryId.name : 'Trải nghiệm thủ công';
 
-  function applyCoupon(event: React.FormEvent) {
-    event.preventDefault();
+  function applyCoupon(event?: React.FormEvent) {
+    if (event) event.preventDefault();
     setCouponError('');
-    if (!couponInput.trim()) { setCouponError('Vui lòng nhập mã giảm giá.'); return; }
+    const raw = couponInput.trim().toUpperCase();
+    if (!raw) {
+      setCouponError('Vui lòng nhập mã giảm giá.');
+      return;
+    }
     try {
-      const result = calculateWorkshopPrice(unitPrice, guests, workshop!.promotion, couponInput);
-      setCouponCode(result.couponCode || '');
-    } catch (error) { setCouponCode(''); setCouponError((error as Error).message); }
+      const result = calculateWorkshopPrice(unitPrice, guests, workshop?.promotion, raw);
+      setCouponCode(result.couponCode || raw);
+      setCouponInput(result.couponCode || raw);
+      setBookingId('');
+    } catch (error: any) {
+      setCouponCode('');
+      setCouponError(error.message || 'Mã giảm giá không hợp lệ.');
+    }
   }
 
   async function handleBook() {
     if (!isAuthenticated) { navigate('/login'); return; }
-    if (!selectedSlot || !validGuests || submitting || !quote) return;
+    if (!selectedSlot || !validGuests || submitting) return;
+
+    // Resolve effective coupon:
+    let effectiveCoupon = couponCode.trim().toUpperCase();
+    const rawInput = couponInput.trim().toUpperCase();
+
+    // If user typed a coupon into the input but forgot to click "Áp dụng", auto-validate and apply:
+    if (!effectiveCoupon && rawInput) {
+      try {
+        const result = calculateWorkshopPrice(unitPrice, guests, workshop?.promotion, rawInput);
+        effectiveCoupon = result.couponCode || rawInput;
+        setCouponCode(effectiveCoupon);
+        setCouponInput(effectiveCoupon);
+        setCouponError('');
+      } catch (err: any) {
+        setCouponError(err.message || 'Mã giảm giá không hợp lệ.');
+        return; // Prevent user from silently proceeding with full price!
+      }
+    }
+
     setSubmitting(true);
     setBookingError('');
     try {
-      let pendingId = bookingId;
-      if (!pendingId) {
-        const response = await bookingApi.create({ timeslotId: selectedTimeslot, quantity: guests, couponCode: couponCode || undefined });
-        pendingId = response.data.data._id;
-        setBookingId(pendingId);
+      const response = await bookingApi.create({
+        timeslotId: selectedTimeslot,
+        quantity: guests,
+        couponCode: effectiveCoupon || undefined,
+      });
+      const pendingId = response.data.data._id;
+      setBookingId(pendingId);
+
+      const payResponse = await paymentApi.createBookingPayment(pendingId);
+      if (!payResponse.data.data?.checkoutUrl) {
+        throw new Error('Chưa nhận được liên kết thanh toán.');
       }
-      const response = await paymentApi.createBookingPayment(pendingId);
-      if (!response.data.data.checkoutUrl) throw new Error('Chưa nhận được liên kết thanh toán.');
-      window.location.assign(response.data.data.checkoutUrl);
+      window.location.assign(payResponse.data.data.checkoutUrl);
     } catch (error: any) {
       setBookingError(error.response?.data?.message || error.message || 'Không thể tạo thanh toán. Vui lòng thử lại.');
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -123,8 +157,8 @@ function WorkshopDetailContent({ id }: { id: string }) {
             <section className="ws-panel" aria-labelledby="ws-schedule-title"><h2 id="ws-schedule-title"><Calendar size={21} /> Chọn lịch trải nghiệm</h2>
               {slotError ? <p role="alert">{slotError} <button type="button" onClick={() => setAttempt((value) => value + 1)}>Thử lại</button></p> : !timeslots.length ? <p className="ws-muted">Chưa có lịch sắp tới. Vui lòng liên hệ chủ xưởng để biết lịch mới.</p> : <div className="ws-slots">{timeslots.map((slot) => {
                 const unavailable = slot.status !== 'AVAILABLE' || slot.availableSlots < 1;
-                return <button type="button" key={slot._id} disabled={unavailable || !!bookingId || submitting} aria-pressed={selectedTimeslot === slot._id}
-                  onClick={() => { setSelectedTimeslot(slot._id); setGuests(1); setCouponCode(''); setCouponError(''); setBookingError(''); }} className="ws-slot">
+                return <button type="button" key={slot._id} disabled={unavailable || submitting} aria-pressed={selectedTimeslot === slot._id}
+                  onClick={() => { setSelectedTimeslot(slot._id); setGuests(1); setBookingId(''); setCouponError(''); setBookingError(''); }} className="ws-slot">
                   <span><strong>{dateTime(slot.startTime)}</strong><small>Đến {new Date(slot.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</small></span>
                   <span><strong>{money(slot.price)}</strong><small>{unavailable ? 'Hết chỗ' : `Còn ${slot.availableSlots} chỗ`}</small></span>
                 </button>;
@@ -135,19 +169,18 @@ function WorkshopDetailContent({ id }: { id: string }) {
           <aside className="ws-booking"><div className="ws-booking-card"><span className="ws-eyebrow">DÀNH THỜI GIAN CHO ĐIỀU BẠN THÍCH</span>
             <div className="ws-price">{money(unitPrice)}{unitPrice > 0 && <small>/ khách</small>}</div>
             <p className="ws-muted">{selectedSlot ? dateTime(selectedSlot.startTime) : 'Chọn lịch để xem giá chính xác.'}</p>
-            <label htmlFor="ws-guests">Số khách</label><input id="ws-guests" type="number" min={1} max={maxGuests} step={1} value={Number.isNaN(guests) ? '' : guests} disabled={!!bookingId || submitting} onChange={(event) => setGuests(event.target.valueAsNumber)} />
+            <label htmlFor="ws-guests">Số khách</label><input id="ws-guests" type="number" min={1} max={maxGuests} step={1} value={Number.isNaN(guests) ? '' : guests} disabled={submitting} onChange={(event) => { setGuests(event.target.valueAsNumber); setBookingId(''); }} />
             {!validGuests && <p role="alert" className="ws-error">Chọn từ 1 đến {maxGuests} khách.</p>}
             {unitPrice > 0 && <div className="ws-coupon">
-              <form onSubmit={applyCoupon}><label htmlFor="ws-coupon">Mã giảm giá</label><div className="ws-coupon-input"><input id="ws-coupon" value={couponInput} maxLength={32} placeholder="Nhập mã ưu đãi" disabled={!!bookingId || submitting} onChange={(event) => { setCouponInput(event.target.value); setCouponCode(''); setCouponError(''); }} /><Button type="submit" variant="outline" size="sm" disabled={!validGuests || !!bookingId || submitting}>Áp dụng</Button></div></form>
+              <form onSubmit={applyCoupon}><label htmlFor="ws-coupon">Mã giảm giá</label><div className="ws-coupon-input"><input id="ws-coupon" value={couponInput} maxLength={32} placeholder="Nhập mã ưu đãi" disabled={submitting} onChange={(event) => { setCouponInput(event.target.value); setBookingId(''); if (couponError) setCouponError(''); }} /><Button type="submit" variant="outline" size="sm" disabled={!validGuests || submitting}>Áp dụng</Button></div></form>
               {couponError && <p role="alert" className="ws-error">{couponError}</p>}
-              {couponCode && <p role="status" className="ws-success">Đã áp dụng {couponCode}. <button type="button" disabled={!!bookingId || submitting} onClick={() => { setCouponCode(''); setCouponInput(''); }}>Bỏ mã</button></p>}
+              {couponCode && <p role="status" className="ws-success">Đã áp dụng {couponCode}. <button type="button" disabled={submitting} onClick={() => { setCouponCode(''); setCouponInput(''); setCouponError(''); setBookingId(''); }}>Bỏ mã</button></p>}
             </div>}
             <div className="ws-totals">{quote && <><div><span>{money(unitPrice)} × {guests} khách</span><span>{money(quote.subtotal)}</span></div>{quote.discountAmount > 0 && <div className="ws-success"><span>Ưu đãi {couponCode}</span><span>−{formatCurrencyShort(quote.discountAmount)}</span></div>}<div className="ws-total"><strong>Tổng cộng</strong><strong>{money(quote.totalPrice)}</strong></div></>}</div>
             {quoteError && <p role="alert" className="ws-error">{quoteError}</p>}
-            {unitPrice === 0 ? <>{workshop.hostPhone ? <a className="ws-contact" href={`tel:${workshop.hostPhone}`}><Phone size={18} /> Liên hệ đăng ký miễn phí</a> : <p>Liên hệ chủ xưởng để đăng ký trải nghiệm miễn phí.</p>}</> : <Button fullWidth size="lg" disabled={!selectedSlot || !validGuests || !quote || (isAuthenticated && user?.role !== 'TOURIST')} isLoading={submitting} onClick={handleBook}>{bookingId ? 'Thử lại thanh toán' : 'Đặt trải nghiệm'}</Button>}
+            {unitPrice === 0 ? <>{workshop.hostPhone ? <a className="ws-contact" href={`tel:${workshop.hostPhone}`}><Phone size={18} /> Liên hệ đăng ký miễn phí</a> : <p>Liên hệ chủ xưởng để đăng ký trải nghiệm miễn phí.</p>}</> : <Button fullWidth size="lg" disabled={!selectedSlot || !validGuests || !quote || (isAuthenticated && user?.role !== 'TOURIST')} isLoading={submitting} onClick={handleBook}>Đặt trải nghiệm</Button>}
             {!selectedSlot && unitPrice > 0 && <p className="ws-muted ws-center">Chọn khung giờ để tiếp tục</p>}
             {isAuthenticated && user?.role !== 'TOURIST' && unitPrice > 0 && <p className="ws-muted">Đăng nhập bằng tài khoản khách để đặt chỗ.</p>}
-            {bookingId && <p className="ws-muted">Đã tạo đặt chỗ. Thử lại để tiếp tục thanh toán cho cùng đặt chỗ, hoặc xem <Link to="/my-bookings">lịch đặt của bạn</Link>.</p>}
             {bookingError && <p role="alert" className="ws-error">{bookingError}</p>}
           </div></aside>
         </div>
