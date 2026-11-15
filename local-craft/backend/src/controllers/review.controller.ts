@@ -4,6 +4,8 @@ import { sendSuccess, sendError } from "../utils/apiResponse";
 import Review from "../models/review.model";
 import Booking from "../models/booking.model";
 import Workshop from "../models/workshop.model";
+import User from "../models/user.model";
+import { MailService } from "../services/mail.service";
 
 export const createReview = asyncHandler(
   async (req: Request, res: Response) => {
@@ -55,6 +57,28 @@ export const createReview = asyncHandler(
       averageRating: Math.round(avgRating * 10) / 10,
       totalReviews: reviews.length,
     });
+
+    // Gửi email thông báo cho chủ xưởng về đánh giá mới (bất đồng bộ)
+    (async () => {
+      try {
+        const [host, ws] = await Promise.all([
+          User.findById(booking.hostId),
+          Workshop.findById(booking.workshopId),
+        ]);
+        if (host?.email) {
+          MailService.sendNewReviewAlertToHost({
+            hostEmail: host.email,
+            hostName: host.fullName || 'Quý Chủ xưởng',
+            workshopTitle: ws?.title || 'Workshop thủ công',
+            touristName: req.user!.fullName || 'Du khách',
+            rating,
+            comment: comment || '',
+          }).catch((err) => console.error('[Mail Error - Review Alert]', err.message));
+        }
+      } catch (err: any) {
+        console.error('[Mail Error - Review Notification]', err.message);
+      }
+    })();
 
     sendSuccess(res, "Đánh giá thành công", review, 201);
   },

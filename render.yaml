@@ -54,6 +54,14 @@ services:
         sync: false
       - key: ELEVENLABS_VOICE_ID
         value: Gsu64Edc28AUbKHbhJFn
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USER
+        sync: false
+      - key: MAIL_PASS
+        sync: false
 
   # ==========================================
   # 2. Frontend Static Site (Vite React SPA)
