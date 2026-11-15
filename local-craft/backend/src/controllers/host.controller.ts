@@ -6,6 +6,7 @@ import Booking from '../models/booking.model';
 import Order from '../models/order.model';
 import Workshop from '../models/workshop.model';
 import Timeslot from '../models/timeslot.model';
+import { MailService } from '../services/mail.service';
 
 export const getDashboard = asyncHandler(async (req: Request, res: Response) => {
   const hostId = req.user!._id;
@@ -251,5 +252,23 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
 
   order.orderStatus = status;
   await order.save();
+
+  // Gửi email cập nhật trạng thái đơn hàng cho du khách (bất đồng bộ)
+  (async () => {
+    try {
+      const tourist = await User.findById(order.touristId);
+      if (tourist?.email) {
+        MailService.sendOrderStatusUpdateEmail({
+          touristEmail: tourist.email,
+          touristName: tourist.fullName || 'Quý khách',
+          orderCode: order.orderCode,
+          status,
+        }).catch((err) => console.error('[Mail Error - Order Status Update]', err.message));
+      }
+    } catch (err: any) {
+      console.error('[Mail Error - Order Status Update Notification]', err.message);
+    }
+  })();
+
   sendSuccess(res, 'Cập nhật trạng thái đơn hàng thành công', order);
 });

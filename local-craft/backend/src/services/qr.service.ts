@@ -4,6 +4,7 @@ import Ticket from '../models/ticket.model';
 import Booking from '../models/booking.model';
 import Timeslot from '../models/timeslot.model';
 import { generateQRCode } from '../utils/generateQRCode';
+import { MailService } from './mail.service';
 
 export class QRService {
   /**
@@ -169,6 +170,18 @@ export class QRService {
     const timeslotLabel = timeslot.startTime
       ? `${new Date(timeslot.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - ${new Date(timeslot.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
       : 'Khung giờ tiêu chuẩn';
+
+    // Gửi email xác nhận check-in cho du khách (bất đồng bộ)
+    if (booking.touristId?.email) {
+      const checkedInTimeStr = `${ticket.usedAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ngày ${ticket.usedAt.toLocaleDateString('vi-VN')}`;
+      MailService.sendCheckInConfirmationToTourist({
+        touristEmail: booking.touristId.email,
+        touristName,
+        workshopTitle,
+        checkedInTime: checkedInTimeStr,
+        bookingCode: booking.bookingCode || String(booking._id),
+      }).catch((err) => console.error('[Mail Error - Checkin Confirmation]', err.message));
+    }
 
     return {
       ticket,
