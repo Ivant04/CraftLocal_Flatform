@@ -12,6 +12,7 @@ export interface CreatePaymentLinkParams {
   }>;
   returnUrl?: string;
   cancelUrl?: string;
+  origin?: string;
 }
 
 export interface PayOSPaymentLinkResult {
@@ -27,13 +28,38 @@ export class PayOSService {
    * SDK v2: payos.paymentRequests.create()
    */
   static async createPaymentLink(params: CreatePaymentLinkParams): Promise<PayOSPaymentLinkResult> {
+    const sanitize = (url: string) =>
+      url.replace(/craftlocal-frontend\.onrender\.com/g, 'craftlocal-frontend-vq6q.onrender.com');
+
+    let returnUrl = params.returnUrl;
+    let cancelUrl = params.cancelUrl;
+
+    if (!returnUrl) {
+      if (params.origin) {
+        returnUrl = `${params.origin.replace(/\/+$/, '')}/payment/payos-return`;
+      } else {
+        returnUrl = env.PAYOS_RETURN_URL;
+      }
+    }
+
+    if (!cancelUrl) {
+      if (params.origin) {
+        cancelUrl = `${params.origin.replace(/\/+$/, '')}/payment/payos-cancel`;
+      } else {
+        cancelUrl = env.PAYOS_CANCEL_URL;
+      }
+    }
+
+    returnUrl = sanitize(returnUrl);
+    cancelUrl = sanitize(cancelUrl);
+
     const result = await payos.paymentRequests.create({
       orderCode: params.orderCode,
       amount: params.amount,
       description: params.description.slice(0, 25), // payOS limit 25 chars
       items: params.items,
-      returnUrl: params.returnUrl || env.PAYOS_RETURN_URL,
-      cancelUrl: params.cancelUrl || env.PAYOS_CANCEL_URL,
+      returnUrl,
+      cancelUrl,
     });
 
     return {
