@@ -50,6 +50,10 @@ services:
         value: gpt-4o-mini
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        value: Gsu64Edc28AUbKHbhJFn
 
   # ==========================================
   # 2. Frontend Static Site (Vite React SPA)

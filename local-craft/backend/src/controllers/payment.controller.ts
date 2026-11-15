@@ -71,6 +71,9 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
   // Create payOS payment link
   const workshopTitle = (booking.workshopId as any)?.title || 'Workshop';
   try {
+    const rawOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer as string).origin : undefined);
+    const clientOrigin = rawOrigin ? rawOrigin.replace(/craftlocal-frontend\.onrender\.com/g, 'craftlocal-frontend-vq6q.onrender.com') : undefined;
+
     const result = await PayOSService.createPaymentLink({
       orderCode,
       amount: booking.totalPrice,
@@ -80,6 +83,7 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
         quantity: 1,
         price: booking.totalPrice,
       }],
+      origin: clientOrigin,
     });
 
     // Update payment with payOS response
@@ -152,11 +156,15 @@ export const createOrderPayOSPayment = asyncHandler(async (req: Request, res: Re
       price: item.price,
     }));
 
+    const rawOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer as string).origin : undefined);
+    const clientOrigin = rawOrigin ? rawOrigin.replace(/craftlocal-frontend\.onrender\.com/g, 'craftlocal-frontend-vq6q.onrender.com') : undefined;
+
     const result = await PayOSService.createPaymentLink({
       orderCode,
       amount: order.totalAmount,
       description: `CL ${paymentCode.slice(-8)}`,
       items,
+      origin: clientOrigin,
     });
 
     payment.checkoutUrl = result.checkoutUrl;
