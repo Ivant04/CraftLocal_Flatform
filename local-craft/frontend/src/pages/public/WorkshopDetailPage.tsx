@@ -12,6 +12,7 @@ import Button from '../../components/common/Button';
 import WorkshopGallery from '../../components/workshop/WorkshopGallery';
 import WorkshopMap from '../../components/workshop/WorkshopMap';
 import WorkshopReviews from '../../components/workshop/WorkshopReviews';
+import AudioGuidePlayer from '../../components/audio/AudioGuidePlayer';
 import './workshopDetail.css';
 
 const money = (amount: number) => amount === 0 ? 'Miễn phí' : formatCurrencyShort(amount);
@@ -104,6 +105,18 @@ function WorkshopDetailContent({ id }: { id: string }) {
           <div className="ws-main-content">
             <section className="ws-panel"><div className="ws-facts"><span><Clock />{workshop.duration} phút trải nghiệm</span><span><Users />Tối đa {workshop.maxGuestsPerSlot} khách</span></div>
               <h2>Một chút thủ công, một trải nghiệm đáng nhớ</h2><p className="ws-description">{workshop.description}</p>
+              {workshop.audioGuide?.audioUrl && (
+                <div className="my-5">
+                  <AudioGuidePlayer
+                    title={`Thuyết minh: ${workshop.title}`}
+                    location={workshop.locationLabel}
+                    type="Giới thiệu xưởng & câu chuyện văn hóa"
+                    narrativeText={workshop.audioGuide.narrativeText}
+                    audioUrl={workshop.audioGuide.audioUrl}
+                    compact={false}
+                  />
+                </div>
+              )}
               {!!workshop.includedItems?.length && <><h3>Trải nghiệm bao gồm</h3><ul className="ws-includes">{workshop.includedItems.map((item) => <li key={item}><Check size={17} />{item}</li>)}</ul></>}
             </section>
             <WorkshopMap title={workshop.title} address={workshop.address?.fullAddress || ''} coordinates={workshop.mapLocation} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle, Circle, PlayCircle, StopCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Circle, PlayCircle, StopCircle, Loader2, Clock } from 'lucide-react';
 import tourGuideApi from '../../api/tourGuideApi';
 import { normalizeTimeslot } from '../../utils/normalizers';
 import { formatTime } from '../../utils/formatDate';
@@ -101,6 +101,9 @@ const TripProgressPage: React.FC = () => {
         );
     }
 
+    const isBeforeStartTime = timeslot?.startTime ? new Date() < new Date(timeslot.startTime) : false;
+    const formattedStartTime = timeslot?.startTimeLabel || (timeslot?.startTime ? formatTime(timeslot.startTime) : '');
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -133,8 +136,38 @@ const TripProgressPage: React.FC = () => {
                     ))}
                 </div>
             </div>
-            <div className="flex gap-3">
-                {tripStatus === 'NOT_STARTED' && <Button onClick={handleStartTrip} disabled={submitting}><PlayCircle size={18} className="mr-2" /> {submitting ? 'Đang xử lý...' : 'Bắt đầu chuyến'}</Button>}
+            <div className="flex flex-col gap-3">
+                {tripStatus === 'NOT_STARTED' && (
+                    <>
+                        {isBeforeStartTime && (
+                            <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs flex items-start gap-2">
+                                <Clock size={16} className="shrink-0 mt-0.5 text-blue-600" />
+                                <div>
+                                    <span className="font-semibold">Chưa đến giờ bắt đầu workshop (bắt đầu lúc {formattedStartTime}):</span>
+                                    <p className="mt-0.5">Du khách có thể đến check-in sớm để chuẩn bị. Hướng dẫn viên chỉ có thể bấm &quot;Bắt đầu chuyến&quot; khi đến đúng giờ quy định.</p>
+                                </div>
+                            </div>
+                        )}
+                        {!isBeforeStartTime && timeslot && timeslot.bookedSlots === 0 && (
+                            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
+                                Khung giờ này hiện chưa có khách đặt vé thành công. Hướng dẫn viên chỉ có thể bắt đầu khi có khách tham gia.
+                            </div>
+                        )}
+                        <Button
+                            onClick={handleStartTrip}
+                            disabled={submitting || isBeforeStartTime || (timeslot !== null && timeslot.bookedSlots === 0)}
+                        >
+                            <PlayCircle size={18} className="mr-2" />
+                            {submitting
+                                ? 'Đang xử lý...'
+                                : isBeforeStartTime
+                                ? `Chưa đến giờ bắt đầu (${formattedStartTime})`
+                                : timeslot && timeslot.bookedSlots === 0
+                                ? 'Chưa có khách tham gia'
+                                : 'Bắt đầu chuyến'}
+                        </Button>
+                    </>
+                )}
                 {tripStatus === 'ONGOING' && currentStep < steps.length - 1 && <Button onClick={() => setCurrentStep(currentStep + 1)}>Bước tiếp theo</Button>}
                 {tripStatus === 'ONGOING' && currentStep === steps.length - 1 && <Button onClick={handleFinishTrip} disabled={submitting} variant="secondary"><StopCircle size={18} className="mr-2" /> {submitting ? 'Đang xử lý...' : 'Kết thúc chuyến'}</Button>}
                 {tripStatus === 'FINISHED' && <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-center w-full"><CheckCircle size={32} className="mx-auto mb-2 text-green-500" /><p className="font-semibold text-green-700">Chuyến đi đã hoàn thành!</p></div>}

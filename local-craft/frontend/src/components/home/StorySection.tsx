@@ -10,11 +10,17 @@ const StorySection: React.FC = () => (
       <div className="relative">
         <div className="relative rounded-3xl overflow-hidden shadow-[0_24px_60px_rgba(61,43,31,0.14)] border-4 border-white">
           <img
-            src={artisanStoryImg}
+            src={artisanStoryImg || '/images/artisan-story.jpg'}
             alt="Câu chuyện nghệ nhân"
             className="w-full h-[380px] sm:h-[460px] object-cover"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://res.cloudinary.com/dqkclqqlw/image/upload/v1783659948/craftlocal/hero/artisan-story.jpg';
+              const target = e.target as HTMLImageElement;
+              if (!target.dataset.triedPublic) {
+                target.dataset.triedPublic = 'true';
+                target.src = '/images/artisan-story.jpg';
+              } else {
+                target.src = 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=1200&q=80';
+              }
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

@@ -18,6 +18,12 @@ export interface WorkshopDetail {
   averageRating: number;
   totalReviews: number;
   promotion?: WorkshopPromotion | null;
+  audioGuide?: {
+    audioUrl?: string;
+    narrativeText?: string;
+    durationSeconds?: number;
+    voice?: string;
+  } | null;
 }
 
 export interface WorkshopTimeslot {

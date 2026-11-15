@@ -16,16 +16,55 @@ export const getSchedules = asyncHandler(
     })
       .populate("workshopId", "title address location images")
       .sort({ startTime: -1 });
-    sendSuccess(res, "Lấy lịch phân công", timeslots);
+
+    const timeslotIds = timeslots.map((ts) => ts._id);
+
+    // Tính số khách đã xác nhận và số khách đang chờ thanh toán
+    const [paidCounts, pendingCounts] = await Promise.all([
+      Booking.aggregate([
+        {
+          $match: {
+            timeslotId: { $in: timeslotIds },
+            bookingStatus: { $in: ["PAID", "CHECKED_IN", "COMPLETED"] },
+          },
+        },
+        { $group: { _id: "$timeslotId", totalGuests: { $sum: "$quantity" } } },
+      ]),
+      Booking.aggregate([
+        {
+          $match: {
+            timeslotId: { $in: timeslotIds },
+            bookingStatus: "PENDING",
+          },
+        },
+        { $group: { _id: "$timeslotId", totalGuests: { $sum: "$quantity" } } },
+      ]),
+    ]);
+
+    const paidMap = new Map(paidCounts.map((p) => [p._id.toString(), p.totalGuests]));
+    const pendingMap = new Map(pendingCounts.map((p) => [p._id.toString(), p.totalGuests]));
+
+    const enrichedTimeslots = timeslots.map((ts) => {
+      const tsObj = ts.toObject();
+      const realPaid = paidMap.get(ts._id.toString()) ?? ts.bookedSlots;
+      const pendingGuests = pendingMap.get(ts._id.toString()) || 0;
+      return {
+        ...tsObj,
+        bookedSlots: realPaid,
+        pendingSlots: pendingGuests,
+      };
+    });
+
+    sendSuccess(res, "Lấy lịch phân công", enrichedTimeslots);
   },
 );
 
 export const getCustomers = asyncHandler(
   async (req: Request, res: Response) => {
-    // Kiểm tra timeslot thuộc tour guide này
+    // Kiểm tra timeslot thuộc tour guide này (hoặc HOST/ADMIN)
     const timeslot = await Timeslot.findOne({
       _id: req.params.id,
-      tourGuideId: req.user!._id,
+      ...(req.user?.role === "TOUR_GUIDE" ? { tourGuideId: req.user._id } : {}),
     });
     if (!timeslot)
       return sendError(
@@ -36,10 +75,11 @@ export const getCustomers = asyncHandler(
 
     const bookings = await Booking.find({
       timeslotId: timeslot._id,
-      bookingStatus: { $in: ["PAID", "CHECKED_IN", "COMPLETED"] },
+      bookingStatus: { $in: ["PAID", "CHECKED_IN", "COMPLETED", "PENDING"] },
     })
       .populate("touristId", "fullName email phone")
-      .populate("ticketId", "qrToken status");
+      .populate("ticketId", "qrToken status")
+      .sort({ createdAt: -1 });
 
     sendSuccess(res, "Lấy danh sách khách hàng", bookings);
   },
@@ -49,24 +89,75 @@ export const checkIn = asyncHandler(async (req: Request, res: Response) => {
   const { qrToken } = req.body;
   if (!qrToken) return sendError(res, "Vui lòng cung cấp mã QR");
 
-  const ticket = await QRService.checkIn(qrToken, req.user!._id.toString());
-  sendSuccess(res, "Check-in thành công!", ticket);
+  const checkInResult = await QRService.checkIn(qrToken, req.user!._id.toString(), req.user?.role);
+  sendSuccess(res, "Check-in thành công!", checkInResult);
 });
 
 export const startTimeslot = asyncHandler(
   async (req: Request, res: Response) => {
-    const timeslot = await Timeslot.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        tourGuideId: req.user!._id,
-        status: { $in: ["AVAILABLE", "FULL"] },
-      },
-      { status: "ONGOING" },
-      { new: true },
-    );
-    if (!timeslot)
-      return sendError(res, "Không thể bắt đầu khung giờ này", 400);
-    sendSuccess(res, "Bắt đầu khung giờ thành công", timeslot);
+    const ts = await Timeslot.findOne({
+      _id: req.params.id,
+      tourGuideId: req.user!._id,
+    });
+    if (!ts) {
+      return sendError(res, "Khung giờ không tồn tại hoặc không thuộc quyền của bạn", 404);
+    }
+
+    if (ts.status === "COMPLETED") {
+      return sendError(res, "Khung giờ này đã kết thúc, không thể bắt đầu lại", 400);
+    }
+    if (ts.status === "ONGOING") {
+      return sendError(res, "Khung giờ này đang diễn ra rồi", 400);
+    }
+    if (ts.status === "CANCELLED") {
+      return sendError(res, "Khung giờ này đã bị hủy", 400);
+    }
+
+    const now = new Date();
+    const startTime = new Date(ts.startTime);
+    const endTime = new Date(ts.endTime);
+
+    // Chặn Tour Guide bấm bắt đầu trước khi workshop diễn ra
+    if (now < startTime) {
+      const startTimeStr = startTime.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const startDateStr = startTime.toLocaleDateString("vi-VN");
+      return sendError(
+        res,
+        `Chưa đến giờ bắt đầu workshop (bắt đầu lúc ${startTimeStr} ngày ${startDateStr}). Du khách có thể đến check-in sớm, nhưng Hướng dẫn viên chỉ có thể bấm 'Bắt đầu chuyến' khi đến giờ diễn ra.`,
+        400,
+      );
+    }
+
+    if (now > endTime) {
+      ts.status = "COMPLETED";
+      await ts.save();
+      return sendError(
+        res,
+        "Khung giờ này đã quá thời gian kết thúc, không thể bắt đầu chuyến đi.",
+        400,
+      );
+    }
+
+    // Kiểm tra có khách đặt vé hay chưa
+    const validBookingsCount = await Booking.countDocuments({
+      timeslotId: ts._id,
+      bookingStatus: { $in: ["PAID", "CHECKED_IN"] },
+    });
+
+    if (validBookingsCount === 0 && ts.bookedSlots === 0) {
+      return sendError(
+        res,
+        "Khung giờ chưa có khách đặt vé thành công, không thể bắt đầu chuyến đi",
+        400
+      );
+    }
+
+    ts.status = "ONGOING";
+    await ts.save();
+    sendSuccess(res, "Bắt đầu khung giờ thành công", ts);
   },
 );
 

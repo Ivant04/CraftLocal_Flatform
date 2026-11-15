@@ -28,6 +28,12 @@ export interface IWorkshop extends Document {
   languages: string[];
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   status: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'DELETED';
+  audioGuide?: {
+    audioUrl?: string;
+    narrativeText?: string;
+    durationSeconds?: number;
+    voice?: string;
+  };
   averageRating: number;
   totalReviews: number;
   totalBookings: number;
@@ -71,6 +77,12 @@ const workshopSchema = new Schema<IWorkshop>(
     requiredItems: [String],
     languages: [{ type: String, default: 'Tiếng Việt' }],
     difficulty: { type: String, enum: ['EASY', 'MEDIUM', 'HARD'], default: 'MEDIUM' },
+    audioGuide: {
+      audioUrl: String,
+      narrativeText: String,
+      durationSeconds: Number,
+      voice: { type: String, default: 'nova' },
+    },
     status: { type: String, enum: ['DRAFT', 'ACTIVE', 'HIDDEN', 'DELETED'], default: 'ACTIVE' },
     averageRating: { type: Number, default: 0 },
     totalReviews: { type: Number, default: 0 },

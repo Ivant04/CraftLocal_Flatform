@@ -171,8 +171,8 @@ const HeroSection: React.FC = () => {
               key={index}
               onClick={() => goTo(index)}
               className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${index === current
-                  ? 'w-10 bg-[#E9C176]'
-                  : 'w-3 bg-white/40 hover:bg-white/70'
+                ? 'w-10 bg-[#E9C176]'
+                : 'w-3 bg-white/40 hover:bg-white/70'
                 }`}
               aria-label={`Chuyển tới slide ${index + 1}`}
             />
