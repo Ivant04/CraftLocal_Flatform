@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Clock, Users, Star, Check, Calendar, Tag, ArrowLeft, Phone } from 'lucide-react';
+import { MapPin, Clock, Users, Star, Check, Calendar, ArrowLeft, Phone } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
 import workshopApi from '../../api/workshopApi';
 import bookingApi from '../../api/bookingApi';
@@ -138,7 +138,6 @@ function WorkshopDetailContent({ id }: { id: string }) {
             <label htmlFor="ws-guests">Số khách</label><input id="ws-guests" type="number" min={1} max={maxGuests} step={1} value={Number.isNaN(guests) ? '' : guests} disabled={!!bookingId || submitting} onChange={(event) => setGuests(event.target.valueAsNumber)} />
             {!validGuests && <p role="alert" className="ws-error">Chọn từ 1 đến {maxGuests} khách.</p>}
             {unitPrice > 0 && <div className="ws-coupon">
-              {workshop.promotion && <div className="ws-promotion"><Tag size={19} /><div><strong>Giảm {workshop.promotion.percentOff}% trải nghiệm</strong><p>Nhập mã <b>{workshop.promotion.code}</b> khi đặt chỗ</p></div></div>}
               <form onSubmit={applyCoupon}><label htmlFor="ws-coupon">Mã giảm giá</label><div className="ws-coupon-input"><input id="ws-coupon" value={couponInput} maxLength={32} placeholder="Nhập mã ưu đãi" disabled={!!bookingId || submitting} onChange={(event) => { setCouponInput(event.target.value); setCouponCode(''); setCouponError(''); }} /><Button type="submit" variant="outline" size="sm" disabled={!validGuests || !!bookingId || submitting}>Áp dụng</Button></div></form>
               {couponError && <p role="alert" className="ws-error">{couponError}</p>}
               {couponCode && <p role="status" className="ws-success">Đã áp dụng {couponCode}. <button type="button" disabled={!!bookingId || submitting} onClick={() => { setCouponCode(''); setCouponInput(''); }}>Bỏ mã</button></p>}
