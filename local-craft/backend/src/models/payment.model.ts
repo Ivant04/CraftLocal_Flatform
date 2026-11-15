@@ -22,6 +22,8 @@ export interface IPayment extends Document {
   paidAt?: Date;
   cancelledAt?: Date;
   refundedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const paymentSchema = new Schema<IPayment>(

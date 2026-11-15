@@ -94,25 +94,37 @@ const CustomerListPage: React.FC = () => {
                     {(c.touristName || "K")[0]}
                   </div>
                   <div>
-                    <p className="font-medium text-on-surface">
-                      {c.touristName}
-                    </p>
-                    <p className="text-xs text-on-surface-variant">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-deep-earth">
+                        {c.touristName}
+                      </p>
+                      {c.status === 'PENDING' && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                          Chờ thanh toán
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
                       {c.guests} khách ·{" "}
-                      {c.qrCode || c.bookingCode || c.touristPhone || ""}
+                      {c.bookingCode ? `Mã: ${c.bookingCode}` : ""}{" "}
+                      {c.touristPhone ? `· SĐT: ${c.touristPhone}` : ""}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {isCheckedIn ? (
-                    <span className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                      <CheckCircle size={16} /> Đã check-in
+                    <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-semibold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                      <CheckCircle size={15} /> Đã check-in
+                    </span>
+                  ) : c.status === 'PENDING' ? (
+                    <span className="text-xs font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      Chưa thanh toán
                     </span>
                   ) : (
                     <button
                       onClick={() => handleCheckIn(c)}
                       disabled={checkingId === c._id}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                      className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {checkingId === c._id ? (
                         <Loader2 size={14} className="animate-spin" />

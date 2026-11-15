@@ -126,14 +126,14 @@ const TicketPage: React.FC = () => {
             <div className="bg-surface-warm p-6 rounded-2xl border border-outline-subtle flex flex-col items-center justify-center text-center">
               <div className="p-3 bg-white rounded-xl shadow-sm border border-outline-subtle inline-block mb-3">
                 <QRCodeSVG
-                  value={booking.qrCode || `CRAFTLOCAL-TICKET-${booking._id}`}
+                  value={`${window.location.origin}/tour-guide/check-in?token=${encodeURIComponent(booking.qrCode || booking._id)}`}
                   size={160}
                   level="H"
                   fgColor="#3D2B1F"
                 />
               </div>
               <p className="font-mono text-xs font-bold text-deep-earth tracking-widest uppercase">
-                {booking.qrCode || booking._id}
+                {booking.qrCode || booking.bookingCode || booking._id}
               </p>
               <div className="flex items-center gap-1.5 text-xs text-forest font-semibold mt-2">
                 <ShieldCheck size={14} /> Mã xác thực bảo mật CraftLocal

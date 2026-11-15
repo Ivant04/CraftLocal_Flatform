@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Clock, Package, ShoppingBag, Users, UserPlus, Menu } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Clock, Package, ShoppingBag, Users, UserPlus, Menu, QrCode } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
 
 const hostLinks = [
   { to: '/host/dashboard', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
   { to: '/host/workshops', label: 'Quản lý Workshop', icon: <BookOpen size={18} /> },
   { to: '/host/timeslots', label: 'Khung giờ', icon: <Clock size={18} /> },
+  { to: '/host/check-in', label: 'Quét vé Check-in', icon: <QrCode size={18} /> },
   { to: '/host/products', label: 'Sản phẩm', icon: <Package size={18} /> },
   { to: '/host/orders', label: 'Đơn hàng', icon: <ShoppingBag size={18} /> },
   { to: '/host/tour-guides', label: 'Hướng dẫn viên', icon: <Users size={18} /> },

@@ -12,6 +12,9 @@ export interface ItineraryStop {
   notes?: string;
   durationMinutes?: number;
   isAiSuggested?: boolean;
+  narrativeText?: string;
+  audioUrl?: string;
+  audioDurationSeconds?: number;
 }
 
 export interface OneDayItinerary {
@@ -53,4 +56,3 @@ export interface GenerateItineraryRequest {
   };
   customRequirements?: string;
 }
-

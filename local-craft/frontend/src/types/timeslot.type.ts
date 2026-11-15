@@ -12,6 +12,7 @@ export interface Timeslot {
   endTimeLabel?: string;
   totalSlots: number;
   bookedSlots: number;
+  pendingSlots?: number;
   availableSlots: number;
   price?: number;
   status: TimeslotStatus;

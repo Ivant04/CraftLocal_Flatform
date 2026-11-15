@@ -27,6 +27,7 @@ import type {
   ActivityType,
 } from '../../types/itinerary.type';
 import { recommendationService } from '../../services/recommendationService';
+import AudioGuidePlayer from '../audio/AudioGuidePlayer';
 
 interface ItineraryModalProps {
   isOpen: boolean;
@@ -71,6 +72,7 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
   const [itinerary, setItinerary] = useState<OneDayItinerary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   // AI Cafe Suggestion Panel State
   const [showCafePanel, setShowCafePanel] = useState<boolean>(false);
@@ -97,14 +99,18 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
     if (!text) return;
 
     setIsLoading(true);
+    setErrorMessage('');
     setShowCafePanel(false);
     try {
       const data = await recommendationService.generateItinerary({
         prompt: text,
       });
       setItinerary(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error('[ItineraryModal] Failed to load itinerary:', err);
+      setErrorMessage(
+        err?.response?.data?.message || 'Không thể tạo lịch trình vào lúc này. Vui lòng kiểm tra kết nối mạng hoặc thử lại!'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -662,6 +668,22 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
                               {stop.notes}
                             </p>
                           )}
+
+                          {/* Audio Guide gắn từ Workshop của Host (nếu có) */}
+                          {Boolean(stop.audioUrl) && (
+                            <div className="mt-2.5">
+                              <AudioGuidePlayer
+                                title={stop.title}
+                                location={stop.location}
+                                type={stop.typeLabel || stop.type}
+                                notes={stop.notes}
+                                narrativeText={stop.narrativeText}
+                                audioUrl={stop.audioUrl}
+                                compact={true}
+                                allowGenerate={false}
+                              />
+                            </div>
+                          )}
                         </div>
 
                         {/* Action Toolbar */}
@@ -719,6 +741,22 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#964824]/10 to-amber-500/10 border border-[#964824]/20 text-[#964824] flex items-center justify-center mb-4 shadow-xs">
                 <Compass size={32} className="text-[#964824]" />
               </div>
+              {errorMessage && (
+                <div className="w-full mb-6 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-left flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                  <div className="flex-1 text-xs text-red-700">
+                    <p className="font-bold mb-0.5">Không thể tạo lịch trình</p>
+                    <p>{errorMessage}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleGenerate()}
+                    className="px-2.5 py-1 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 cursor-pointer shrink-0"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              )}
               <h3 className="font-bold text-base md:text-lg text-[#3D2B1F] mb-1.5 font-playfair">
                 Nhập mong muốn để AI thiết kế lịch trình 1 ngày
               </h3>
@@ -744,6 +782,7 @@ export const ItineraryModal: React.FC<ItineraryModalProps> = ({
                       type="button"
                       onClick={() => {
                         setPromptInput(sample);
+                        handleGenerate(sample);
                       }}
                       className="text-left p-2.5 rounded-xl bg-white border border-[#EAD8CC] hover:border-[#964824] hover:bg-[#FAF7F2] text-[#5A4A41] transition-all cursor-pointer shadow-2xs group"
                     >

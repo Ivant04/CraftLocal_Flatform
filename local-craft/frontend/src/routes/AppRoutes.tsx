@@ -109,6 +109,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/host/orders" element={<ManageOrdersPage />} />
       <Route path="/host/tour-guides" element={<ManageTourGuidesPage />} />
       <Route path="/host/assign-guide" element={<AssignGuidePage />} />
+      <Route path="/host/check-in" element={<QRCheckInPage />} />
     </Route>
 
     {/* Tour Guide Routes */}

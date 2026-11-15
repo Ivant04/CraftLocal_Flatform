@@ -45,6 +45,12 @@ export interface NearbyPlace {
   directionsUrl: string;
   hostName?: string;
   hostWorkshopName?: string;
+  audioGuide?: {
+    audioUrl?: string;
+    narrativeText?: string;
+    durationSeconds?: number;
+    voice?: string;
+  };
 }
 
 /**
@@ -209,6 +215,7 @@ export async function findNearbyPlaces(
       directionsUrl: buildDirectionsUrl(userLat, userLng, wLat, wLng, ws.address?.fullAddress),
       hostName: ws.hostName,
       hostWorkshopName: ws.hostWorkshopName,
+      audioGuide: ws.audioGuide,
     });
   }
 

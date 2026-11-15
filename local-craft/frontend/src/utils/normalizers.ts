@@ -154,6 +154,7 @@ export const normalizeTimeslot = (raw: any): Timeslot => {
     endTimeLabel: formatTimeOnly(raw?.endTime),
     totalSlots: Number(raw?.totalSlots ?? 0),
     bookedSlots: Number(raw?.bookedSlots ?? 0),
+    pendingSlots: Number(raw?.pendingSlots ?? 0),
     availableSlots: Number(raw?.availableSlots ?? 0),
     price: raw?.price !== undefined ? Number(raw.price) : undefined,
     status: raw?.status || 'AVAILABLE',

@@ -216,6 +216,7 @@ export const createWorkshop = asyncHandler(async (req: Request, res: Response) =
     requiredItems: requiredItems || ["Trang phục thoải mái"],
     languages: languages || language || ["Tiếng Việt", "Tiếng Anh"],
     difficulty: difficulty || "EASY",
+    audioGuide: req.body.audioGuide || undefined,
     status: 'ACTIVE'
   });
 
@@ -314,6 +315,7 @@ export const updateWorkshop = asyncHandler(async (req: Request, res: Response) =
   if (requiredItems) updateData.requiredItems = requiredItems;
   if (languages || language) updateData.languages = languages || language;
   if (difficulty) updateData.difficulty = difficulty;
+  if (req.body.audioGuide !== undefined) updateData.audioGuide = req.body.audioGuide;
   if (req.body.status && ['DRAFT', 'ACTIVE', 'HIDDEN'].includes(req.body.status)) {
     updateData.status = req.body.status;
   }

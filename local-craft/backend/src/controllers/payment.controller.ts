@@ -28,9 +28,18 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
     return sendError(res, 'Khung giờ không đủ chỗ trống');
   }
 
+  // Check if timeslot has already passed
+  if (timeslot.startTime && new Date(timeslot.startTime) <= new Date()) {
+    booking.bookingStatus = 'CANCELLED';
+    booking.cancelReason = 'Quá hạn thanh toán (Khung giờ trải nghiệm đã diễn ra)';
+    await booking.save();
+    return sendError(res, 'Khung giờ trải nghiệm này đã bắt đầu hoặc đã qua, không thể tiếp tục thanh toán.', 400);
+  }
+
   // Check if there's already a PENDING payment for this booking
   const existingPayment = await Payment.findOne({ bookingId, paymentStatus: 'PENDING' });
-  if (existingPayment && existingPayment.checkoutUrl) {
+  const isRecent = existingPayment?.createdAt && (Date.now() - new Date(existingPayment.createdAt).getTime() < 15 * 60 * 1000);
+  if (existingPayment && existingPayment.checkoutUrl && isRecent) {
     return sendSuccess(res, 'Đã có link thanh toán', {
       paymentId: existingPayment._id,
       orderCode: existingPayment.orderCode,
@@ -38,6 +47,9 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
       qrCode: existingPayment.qrCode,
       amount: existingPayment.amount,
     });
+  } else if (existingPayment) {
+    // Payment link expired or old, mark as EXPIRED to generate a new clean link
+    await Payment.findByIdAndUpdate(existingPayment._id, { paymentStatus: 'EXPIRED' });
   }
 
   // Generate unique orderCode and paymentCode

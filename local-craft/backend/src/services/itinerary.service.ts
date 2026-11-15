@@ -21,6 +21,9 @@ export interface ItineraryStop {
   notes?: string;
   durationMinutes?: number;
   isAiSuggested?: boolean;
+  narrativeText?: string;
+  audioUrl?: string;
+  audioDurationSeconds?: number;
 }
 
 export interface OneDayItinerary {
@@ -548,14 +551,15 @@ QUY TẮC BẮT BUỘC KHI LẬP LỊCH TRÌNH:
       "costEstimate": "35.000đ",
       "notes": "Mẹo trải nghiệm hoặc lưu ý",
       "durationMinutes": 60,
-      "isAiSuggested": true
+      "isAiSuggested": true,
+      "narrativeText": "Một đoạn thuyết minh truyền cảm ngắn gọn (2-3 câu) giới thiệu nét văn hóa hoặc bí quyết trải nghiệm tại điểm này"
     }
   ]
 }`;
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 18000);
+      const timeout = setTimeout(() => controller.abort(), 8000);
 
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
@@ -593,19 +597,31 @@ QUY TẮC BẮT BUỘC KHI LẬP LỊCH TRÌNH:
               summary: parsed.summary || 'Lịch trình được cá nhân hóa bởi AI dựa trên thời tiết và các làng nghề địa phương.',
               totalEstimatedCost: parsed.totalEstimatedCost || 'Khoảng 300.000đ - 450.000đ',
               weatherNote: parsed.weatherNote || (weather ? `${weather.condition}, ${weather.temperature}°C` : undefined),
-              stops: parsed.stops.map((s: any, idx: number) => ({
-                id: s.id || `stop-${idx + 1}-${Date.now()}`,
-                time: s.time || '09:00 - 10:00',
-                period: s.period || (idx < 2 ? 'MORNING' : idx === 2 ? 'NOON' : idx < 5 ? 'AFTERNOON' : 'EVENING'),
-                title: s.title || 'Điểm trải nghiệm văn hóa',
-                type: s.type || 'SIGHTSEEING',
-                typeLabel: s.typeLabel || 'Hoạt động trải nghiệm',
-                location: s.location || coords.name,
-                costEstimate: s.costEstimate || 'Miễn phí',
-                notes: s.notes || '',
-                durationMinutes: s.durationMinutes || 60,
-                isAiSuggested: s.isAiSuggested ?? true,
-              })),
+              stops: parsed.stops.map((s: any, idx: number) => {
+                const matchingPlace = places.find(
+                  (p) =>
+                    p.audioGuide?.audioUrl &&
+                    (s.title?.toLowerCase().includes(p.name?.toLowerCase()) ||
+                      p.name?.toLowerCase().includes(s.title?.toLowerCase()))
+                );
+
+                return {
+                  id: s.id || `stop-${idx + 1}-${Date.now()}`,
+                  time: s.time || '09:00 - 10:00',
+                  period: s.period || (idx < 2 ? 'MORNING' : idx === 2 ? 'NOON' : idx < 5 ? 'AFTERNOON' : 'EVENING'),
+                  title: s.title || 'Điểm trải nghiệm văn hóa',
+                  type: s.type || 'SIGHTSEEING',
+                  typeLabel: s.typeLabel || 'Hoạt động trải nghiệm',
+                  location: s.location || coords.name,
+                  costEstimate: s.costEstimate || 'Miễn phí',
+                  notes: s.notes || '',
+                  durationMinutes: s.durationMinutes || 60,
+                  isAiSuggested: s.isAiSuggested ?? true,
+                  audioUrl: matchingPlace?.audioGuide?.audioUrl || undefined,
+                  narrativeText: matchingPlace?.audioGuide?.narrativeText || undefined,
+                  audioDurationSeconds: matchingPlace?.audioGuide?.durationSeconds || undefined,
+                };
+              }),
               generatedAt: new Date().toISOString(),
               engine: 'openai+smart_itinerary',
             };
