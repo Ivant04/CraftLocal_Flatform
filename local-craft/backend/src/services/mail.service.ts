@@ -92,38 +92,7 @@ export class MailService {
       return false;
     }
 
-    // 1. Ưu tiên gửi qua Resend HTTP REST API (Cổng 443 - Vượt qua rào cản firewall của Render Free)
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
-      try {
-        const fromEmail = process.env.RESEND_FROM || 'CraftLocal <onboarding@resend.dev>';
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: [to],
-            subject,
-            html,
-          }),
-        });
-
-        const resData: any = await response.json();
-        if (!response.ok) {
-          throw new Error(resData?.message || JSON.stringify(resData));
-        }
-
-        console.log(`✅ [MailService - Resend API] Đã gửi email thành công tới: ${to} (ID: ${resData.id})`);
-        return true;
-      } catch (err: any) {
-        console.error(`❌ [MailService - Resend API] Lỗi gửi tới ${to}:`, err.message);
-      }
-    }
-
-    // 2. Hoặc gửi qua Brevo HTTP REST API (Cổng 443 - Miễn phí 300 mail/ngày, hoạt động 100% trên Render Free)
+    // 1. Ưu tiên gửi qua Brevo HTTP REST API (Cổng 443 - Cho phép gửi tới mọi người nhận không cần domain riêng)
     const brevoApiKey = process.env.BREVO_API_KEY;
     if (brevoApiKey) {
       try {
@@ -151,6 +120,69 @@ export class MailService {
         return true;
       } catch (err: any) {
         console.error(`❌ [MailService - Brevo API] Lỗi gửi tới ${to}:`, err.message);
+      }
+    }
+
+    // 2. Tiếp theo: Resend HTTP REST API (Cổng 443)
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      try {
+        const fromEmail = process.env.RESEND_FROM || 'CraftLocal <onboarding@resend.dev>';
+        let response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: fromEmail,
+            to: [to],
+            subject,
+            html,
+          }),
+        });
+
+        let resData: any = await response.json();
+
+        // Xử lý tự động khi dính chính sách tài khoản thử nghiệm của Resend (chỉ cho gửi tới email chính chủ tài khoản):
+        if (!response.ok && (resData?.message?.includes('testing emails') || resData?.message?.includes('own email address'))) {
+          const matchEmail = resData.message.match(/\(([^)]+@gmail\.com|[^)]+@[^)]+)\)/);
+          const ownerEmail = matchEmail ? matchEmail[1] : (env.MAIL_USER || 'vaductai2905@gmail.com');
+
+          console.warn(`[MailService - Resend Test Mode] Tài khoản Resend chưa gắn domain riêng, tự động chuyển tiếp tới hòm thư chủ tài khoản: ${ownerEmail} (người nhận gốc: ${to})`);
+
+          const forwardNotice = `
+            <div style="background: #fff3cd; color: #856404; padding: 14px 18px; border-radius: 10px; margin-bottom: 22px; font-size: 13px; border: 1px solid #ffeeba; line-height: 1.5;">
+              ⚠️ <strong>Chế độ thử nghiệm Resend:</strong> Do tài khoản Resend chưa xác thực tên miền riêng, Resend chỉ cho phép gửi về email chủ tài khoản (<strong>${ownerEmail}</strong>).<br>
+              👤 Người nhận thực tế của hệ thống: <strong>${to}</strong>
+            </div>
+          `;
+
+          response = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: [ownerEmail],
+              subject: `[Test] ${subject} (Gửi tới: ${to})`,
+              html: forwardNotice + html,
+            }),
+          });
+
+          resData = await response.json();
+        }
+
+        if (!response.ok) {
+          throw new Error(resData?.message || JSON.stringify(resData));
+        }
+
+        console.log(`✅ [MailService - Resend API] Đã gửi email thành công tới: ${to} (ID: ${resData.id})`);
+        return true;
+      } catch (err: any) {
+        console.error(`❌ [MailService - Resend API] Lỗi gửi tới ${to}:`, err.message);
       }
     }
 
