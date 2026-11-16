@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { LayoutDashboard, Calendar, QrCode, Menu } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 const guideLinks = [
   { to: '/tour-guide/dashboard', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
@@ -13,7 +14,7 @@ const TourGuideLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-craft-contour flex">
+    <div className="min-h-screen bg-surface flex">
       <Sidebar links={guideLinks} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} title="Hướng dẫn viên" />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b border-soft-clay bg-white flex items-center px-4 lg:px-8 gap-4">
@@ -23,7 +24,9 @@ const TourGuideLayout: React.FC = () => {
           <h1 className="text-lg font-semibold text-deep-earth">Hướng dẫn viên</h1>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-          <Outlet />
+          <ErrorBoundary fallbackTitle="Không thể tải trang hướng dẫn viên" fallbackMessage="Đã xảy ra sự cố khi tải nội dung trang này. Vui lòng thử tải lại trang.">
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

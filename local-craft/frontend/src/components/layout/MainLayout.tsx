@@ -6,6 +6,7 @@ import { NearbyModalProvider, useNearbyModal } from '../../context/NearbyModalCo
 import NearbyRecommendationModal from '../home/NearbyRecommendationModal';
 import NearbyFloatingTrigger from '../home/NearbyFloatingTrigger';
 import ItineraryModal from '../itinerary/ItineraryModal';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 const MainLayoutContent: React.FC = () => {
   const {
@@ -20,7 +21,9 @@ const MainLayoutContent: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-craft-contour">
       <Header />
       <main className="flex-1">
-        <Outlet />
+        <ErrorBoundary fallbackTitle="Không thể tải trang" fallbackMessage="Đã xảy ra sự cố không mong muốn khi tải trang này. Bạn có thể nhấn thử lại bên dưới.">
+          <Outlet />
+        </ErrorBoundary>
       </main>
       <Footer />
 
