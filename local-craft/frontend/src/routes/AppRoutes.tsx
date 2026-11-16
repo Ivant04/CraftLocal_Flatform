@@ -34,6 +34,7 @@ import MyBookingsPage from '../pages/tourist/MyBookingsPage';
 import TicketPage from '../pages/tourist/TicketPage';
 import MyOrdersPage from '../pages/tourist/MyOrdersPage';
 import ReviewPage from '../pages/tourist/ReviewPage';
+import ProfilePage from '../pages/tourist/ProfilePage';
 
 // Admin Pages
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
@@ -80,6 +81,8 @@ const AppRoutes: React.FC = () => (
       <Route path="/my-bookings/:id/ticket" element={<ProtectedRoute><TicketPage /></ProtectedRoute>} />
       <Route path="/my-orders" element={<ProtectedRoute><MyOrdersPage /></ProtectedRoute>} />
       <Route path="/review/:bookingId" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/edit-profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     </Route>
 
     {/* Auth Routes */}

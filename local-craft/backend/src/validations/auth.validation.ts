@@ -17,6 +17,9 @@ export const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự').optional(),
   phone: z.string().optional(),
   avatar: z.string().optional(),
+  dateOfBirth: z.string().optional().nullable(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  address: z.string().optional(),
 });
 
 export const changePasswordSchema = z.object({
