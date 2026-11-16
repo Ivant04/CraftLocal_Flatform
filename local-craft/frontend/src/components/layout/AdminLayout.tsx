@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { LayoutDashboard, Users, UserCheck, TrendingUp, Menu } from 'lucide-react';
 import Sidebar from '../../components/layout/Sidebar';
+import ErrorBoundary from '../common/ErrorBoundary';
 
 const adminLinks = [
   { to: '/admin/dashboard', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
@@ -24,7 +25,9 @@ const AdminLayout: React.FC = () => {
           <h1 className="text-lg font-semibold text-deep-earth">Quản trị viên</h1>
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
-          <Outlet />
+          <ErrorBoundary fallbackTitle="Không thể tải trang quản trị" fallbackMessage="Đã xảy ra sự cố khi tải nội dung trang quản trị này. Bạn có thể nhấn Thử lại bên dưới.">
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

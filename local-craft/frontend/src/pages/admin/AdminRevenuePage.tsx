@@ -2,14 +2,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import {
   TrendingUp,
   DollarSign,
-  Calendar,
-  ArrowUpRight,
   BarChart3,
   RefreshCw,
   AlertCircle,
-  FileSpreadsheet,
   Layers,
   Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   BarChart,
@@ -33,10 +31,10 @@ interface MonthlyRevenueItem {
 
 const AdminRevenuePage: React.FC = () => {
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenueItem[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalBookings, setTotalBookings] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [totalRevenue, setTotalRevenue] = useState<number>(0);
+  const [totalBookings, setTotalBookings] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
   const [chartType, setChartType] = useState<'bar' | 'area'>('bar');
 
   const fetchData = async () => {
@@ -45,9 +43,15 @@ const AdminRevenuePage: React.FC = () => {
     try {
       const res = await adminApi.getDashboard();
       const d = res.data?.data || {};
-      setTotalRevenue(Number(d.totalRevenue ?? 0));
-      setTotalBookings(Number(d.totalBookings ?? 0));
-      setMonthlyRevenue(Array.isArray(d.monthlyRevenue) ? d.monthlyRevenue : []);
+      setTotalRevenue(Number(d.totalRevenue) || 0);
+      setTotalBookings(Number(d.totalBookings) || 0);
+      const rawMonthly = Array.isArray(d.monthlyRevenue) ? d.monthlyRevenue : [];
+      setMonthlyRevenue(
+        rawMonthly.map((m: any) => ({
+          month: String(m?.month || ''),
+          revenue: Number(m?.revenue) || 0,
+        }))
+      );
     } catch (err: any) {
       setError(err?.response?.data?.message || 'Không thể tải thống kê doanh thu.');
     } finally {
@@ -59,15 +63,15 @@ const AdminRevenuePage: React.FC = () => {
     fetchData();
   }, []);
 
-  // Compute metrics
+  // Compute metrics safely
   const maxMonth = useMemo(() => {
-    if (monthlyRevenue.length === 0) return null;
-    return [...monthlyRevenue].sort((a, b) => b.revenue - a.revenue)[0];
+    if (!Array.isArray(monthlyRevenue) || monthlyRevenue.length === 0) return null;
+    return [...monthlyRevenue].sort((a, b) => (Number(b.revenue) || 0) - (Number(a.revenue) || 0))[0] || null;
   }, [monthlyRevenue]);
 
   const avgMonthly = useMemo(() => {
-    if (monthlyRevenue.length === 0) return 0;
-    const sum = monthlyRevenue.reduce((acc, m) => acc + m.revenue, 0);
+    if (!Array.isArray(monthlyRevenue) || monthlyRevenue.length === 0) return 0;
+    const sum = monthlyRevenue.reduce((acc, m) => acc + (Number(m.revenue) || 0), 0);
     return Math.round(sum / monthlyRevenue.length);
   }, [monthlyRevenue]);
 
@@ -213,66 +217,76 @@ const AdminRevenuePage: React.FC = () => {
             <p className="text-xs mt-1">Dữ liệu doanh thu sẽ tự động hiển thị khi phát sinh đơn hàng thành công.</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={320}>
+          <div className="w-full h-[320px]">
             {chartType === 'bar' ? (
-              <BarChart data={monthlyRevenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EAD8CC" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: '#7A6255', fontSize: 12 }} axisLine={{ stroke: '#EAD8CC' }} />
-                <YAxis
-                  tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : `${v}`)}
-                  tick={{ fill: '#7A6255', fontSize: 12 }}
-                  axisLine={{ stroke: '#EAD8CC' }}
-                />
-                <Tooltip
-                  formatter={(v: number) => [formatCurrencyShort(v), 'Doanh thu']}
-                  contentStyle={{
-                    borderRadius: '16px',
-                    border: '1px solid #EAD8CC',
-                    backgroundColor: '#FAF7F2',
-                    boxShadow: '0 8px 30px rgba(61,43,31,0.08)',
-                    fontWeight: 600,
-                    fontSize: '12px',
-                  }}
-                />
-                <Bar dataKey="revenue" fill="#964824" radius={[8, 8, 0, 0]} maxBarSize={56} />
-              </BarChart>
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={monthlyRevenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EAD8CC" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: '#7A6255', fontSize: 12 }} axisLine={{ stroke: '#EAD8CC' }} />
+                  <YAxis
+                    tickFormatter={(v) => {
+                      const n = Number(v) || 0;
+                      return n >= 1000000 ? `${(n / 1000000).toFixed(0)}M` : `${n}`;
+                    }}
+                    tick={{ fill: '#7A6255', fontSize: 12 }}
+                    axisLine={{ stroke: '#EAD8CC' }}
+                  />
+                  <Tooltip
+                    formatter={(v: any) => [formatCurrencyShort(v), 'Doanh thu']}
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: '1px solid #EAD8CC',
+                      backgroundColor: '#FAF7F2',
+                      boxShadow: '0 8px 30px rgba(61,43,31,0.08)',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar dataKey="revenue" fill="#964824" radius={[8, 8, 0, 0]} maxBarSize={56} />
+                </BarChart>
+              </ResponsiveContainer>
             ) : (
-              <AreaChart data={monthlyRevenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#964824" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#964824" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#EAD8CC" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: '#7A6255', fontSize: 12 }} axisLine={{ stroke: '#EAD8CC' }} />
-                <YAxis
-                  tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : `${v}`)}
-                  tick={{ fill: '#7A6255', fontSize: 12 }}
-                  axisLine={{ stroke: '#EAD8CC' }}
-                />
-                <Tooltip
-                  formatter={(v: number) => [formatCurrencyShort(v), 'Doanh thu']}
-                  contentStyle={{
-                    borderRadius: '16px',
-                    border: '1px solid #EAD8CC',
-                    backgroundColor: '#FAF7F2',
-                    boxShadow: '0 8px 30px rgba(61,43,31,0.08)',
-                    fontWeight: 600,
-                    fontSize: '12px',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#964824"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#revenueGradient)"
-                />
-              </AreaChart>
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={monthlyRevenue} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#964824" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#964824" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#EAD8CC" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: '#7A6255', fontSize: 12 }} axisLine={{ stroke: '#EAD8CC' }} />
+                  <YAxis
+                    tickFormatter={(v) => {
+                      const n = Number(v) || 0;
+                      return n >= 1000000 ? `${(n / 1000000).toFixed(0)}M` : `${n}`;
+                    }}
+                    tick={{ fill: '#7A6255', fontSize: 12 }}
+                    axisLine={{ stroke: '#EAD8CC' }}
+                  />
+                  <Tooltip
+                    formatter={(v: any) => [formatCurrencyShort(v), 'Doanh thu']}
+                    contentStyle={{
+                      borderRadius: '16px',
+                      border: '1px solid #EAD8CC',
+                      backgroundColor: '#FAF7F2',
+                      boxShadow: '0 8px 30px rgba(61,43,31,0.08)',
+                      fontWeight: 600,
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#964824"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#revenueGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             )}
-          </ResponsiveContainer>
+          </div>
         )}
       </div>
 
@@ -300,12 +314,13 @@ const AdminRevenuePage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-[#EAD8CC]/60 text-[#3D2B1F]">
                 {monthlyRevenue.map((item, index) => {
-                  const percent = totalRevenue > 0 ? ((item.revenue / totalRevenue) * 100).toFixed(1) : '0';
+                  const rev = Number(item.revenue) || 0;
+                  const percent = totalRevenue > 0 ? ((rev / totalRevenue) * 100).toFixed(1) : '0';
                   return (
                     <tr key={index} className="hover:bg-[#FAF7F2]/60 transition-colors">
-                      <td className="py-3 px-4 md:px-6 font-semibold">{item.month}</td>
+                      <td className="py-3 px-4 md:px-6 font-semibold">{item.month || '—'}</td>
                       <td className="py-3 px-4 font-bold text-[#964824]">
-                        {formatCurrencyShort(item.revenue)}
+                        {formatCurrencyShort(rev)}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2 max-w-xs">
