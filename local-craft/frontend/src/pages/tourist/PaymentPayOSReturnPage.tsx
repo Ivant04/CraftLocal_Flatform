@@ -79,8 +79,15 @@ const PaymentPayOSReturnPage: React.FC = () => {
     );
   }
 
+  const rawStatus = payment?.paymentStatus;
+  const isSuccess = rawStatus === 'SUCCESS' || payosCode === '00' || payosStatus === 'PAID';
+  const bookingObj = payment?.bookingId;
+  const bookingId = typeof bookingObj === 'object' ? bookingObj?._id : bookingObj;
+  const hasOrder = Boolean(payment?.orderId);
+  const isBooking = Boolean(bookingId);
+
   // Explicit user cancel from query or database
-  if (isExplicitCancel || payment?.paymentStatus === 'CANCELLED') {
+  if (isExplicitCancel || rawStatus === 'CANCELLED') {
     return (
       <div className="max-w-md mx-auto px-5 py-20 text-center animate-fadeIn">
         <div className="w-20 h-20 mx-auto bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
@@ -90,7 +97,9 @@ const PaymentPayOSReturnPage: React.FC = () => {
           Thanh toán đã bị hủy
         </h1>
         <p className="text-on-surface-variant mb-3 text-sm">
-          Giao dịch thanh toán đã bị hủy bỏ. Đơn hàng hoặc lịch đặt chỗ của bạn vẫn được lưu ở trạng thái chờ thanh toán.
+          {hasOrder
+            ? 'Giao dịch thanh toán đã bị hủy bỏ. Đơn hàng của bạn vẫn được lưu ở trạng thái chờ thanh toán.'
+            : 'Giao dịch thanh toán đã bị hủy bỏ. Lịch đặt chỗ của bạn vẫn được lưu ở trạng thái chờ thanh toán.'}
         </p>
         {orderCode && (
           <p className="text-xs text-on-surface-variant/70 mb-8 font-mono bg-soft-clay/30 py-1.5 px-3 rounded-lg inline-block">
@@ -98,11 +107,19 @@ const PaymentPayOSReturnPage: React.FC = () => {
           </p>
         )}
         <div className="flex flex-col sm:flex-row justify-center gap-3">
-          <Link to="/my-bookings">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              Xem lịch đặt chỗ
-            </Button>
-          </Link>
+          {hasOrder ? (
+            <Link to="/my-orders">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <ShoppingBag size={15} className="mr-1.5" /> Xem đơn hàng
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/my-bookings">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                <Ticket size={15} className="mr-1.5" /> Xem lịch đặt chỗ
+              </Button>
+            </Link>
+          )}
           <Link to="/">
             <Button size="sm" className="w-full sm:w-auto">
               <Home size={15} className="mr-1.5" /> Về trang chủ
@@ -137,14 +154,20 @@ const PaymentPayOSReturnPage: React.FC = () => {
     );
   }
 
-  const rawStatus = payment?.paymentStatus;
-  const isSuccess = rawStatus === 'SUCCESS' || payosCode === '00' || payosStatus === 'PAID';
-  const bookingObj = payment?.bookingId;
-  const bookingId = typeof bookingObj === 'object' ? bookingObj?._id : bookingObj;
-  const hasOrder = Boolean(payment?.orderId);
-
   // SUCCESS
   if (isSuccess) {
+    const successTitle = hasOrder
+      ? 'Đặt hàng thành công!'
+      : isBooking
+      ? 'Đặt chỗ thành công!'
+      : 'Thanh toán thành công!';
+
+    const successSubtitle = hasOrder
+      ? 'Cảm ơn bạn đã mua sắm sản phẩm thủ công truyền thống cùng CraftLocal. Đơn hàng của bạn đã được chuyển tới chủ xưởng để chuẩn bị đóng gói và giao hàng.'
+      : isBooking
+      ? 'Cảm ơn bạn đã lựa chọn trải nghiệm cùng CraftLocal. Vé điện tử và mã QR check-in của bạn đã sẵn sàng.'
+      : 'Cảm ơn bạn đã hoàn tất thanh toán dịch vụ cùng CraftLocal.';
+
     return (
       <div className="max-w-lg mx-auto px-5 py-16 text-center animate-fadeIn">
         <div className="w-20 h-20 mx-auto bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-[0_4px_20px_rgba(16,185,129,0.25)]">
@@ -156,11 +179,11 @@ const PaymentPayOSReturnPage: React.FC = () => {
         </span>
 
         <h1 className="text-2xl sm:text-3xl font-bold font-headline-lg text-deep-earth mb-3">
-          Đặt chỗ thành công!
+          {successTitle}
         </h1>
 
         <p className="text-on-surface-variant mb-6 text-sm max-w-sm mx-auto">
-          Cảm ơn bạn đã lựa chọn trải nghiệm cùng CraftLocal. Vé điện tử và mã QR check-in của bạn đã sẵn sàng.
+          {successSubtitle}
         </p>
 
         {/* Transaction details card */}
@@ -177,8 +200,16 @@ const PaymentPayOSReturnPage: React.FC = () => {
           )}
           {orderCode && (
             <div className="flex justify-between items-center text-xs pb-2 border-b border-soft-clay/60">
-              <span className="text-on-surface-variant">Mã đơn hàng</span>
+              <span className="text-on-surface-variant">
+                {hasOrder ? 'Mã đơn hàng' : 'Mã tham chiếu'}
+              </span>
               <span className="font-mono text-deep-earth">{orderCode}</span>
+            </div>
+          )}
+          {isBooking && payment?.bookingId?.bookingCode && (
+            <div className="flex justify-between items-center text-xs pb-2 border-b border-soft-clay/60">
+              <span className="text-on-surface-variant">Mã đặt chỗ</span>
+              <span className="font-mono text-deep-earth font-semibold">{payment.bookingId.bookingCode}</span>
             </div>
           )}
           {payment?.amount && (
@@ -193,7 +224,14 @@ const PaymentPayOSReturnPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          {bookingId ? (
+          {/* 1. Primary Action */}
+          {hasOrder ? (
+            <Link to="/my-orders" className="w-full sm:w-auto">
+              <Button size="md" className="w-full flex items-center justify-center gap-2">
+                <ShoppingBag size={16} /> Xem đơn hàng của tôi <ArrowRight size={15} />
+              </Button>
+            </Link>
+          ) : isBooking && bookingId ? (
             <Link to={`/my-bookings/${bookingId}/ticket`} className="w-full sm:w-auto">
               <Button size="md" className="w-full flex items-center justify-center gap-2">
                 <Ticket size={16} /> Xem vé điện tử & QR <ArrowRight size={15} />
@@ -202,19 +240,27 @@ const PaymentPayOSReturnPage: React.FC = () => {
           ) : (
             <Link to="/my-bookings" className="w-full sm:w-auto">
               <Button size="md" className="w-full flex items-center justify-center gap-2">
-                <Ticket size={16} /> Xem lịch đặt chỗ
+                <Ticket size={16} /> Xem lịch đặt chỗ <ArrowRight size={15} />
               </Button>
             </Link>
           )}
 
-          {hasOrder && (
-            <Link to="/my-orders" className="w-full sm:w-auto">
+          {/* 2. Secondary Action */}
+          {hasOrder ? (
+            <Link to="/products" className="w-full sm:w-auto">
               <Button variant="outline" size="md" className="w-full flex items-center justify-center gap-2">
-                <ShoppingBag size={16} /> Xem đơn hàng
+                Tiếp tục mua sắm
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/workshops" className="w-full sm:w-auto">
+              <Button variant="outline" size="md" className="w-full flex items-center justify-center gap-2">
+                Khám phá workshop khác
               </Button>
             </Link>
           )}
 
+          {/* 3. Back to home */}
           <Link to="/" className="w-full sm:w-auto">
             <Button variant="ghost" size="md" className="w-full flex items-center justify-center gap-1.5">
               <Home size={15} /> Trang chủ
@@ -250,9 +296,19 @@ const PaymentPayOSReturnPage: React.FC = () => {
         <Button variant="outline" size="sm" onClick={handleRetry}>
           <RefreshCw size={15} className="mr-1.5" /> Kiểm tra lại
         </Button>
-        <Link to="/my-bookings">
-          <Button size="sm">Xem lịch đặt</Button>
-        </Link>
+        {hasOrder ? (
+          <Link to="/my-orders">
+            <Button size="sm">
+              <ShoppingBag size={15} className="mr-1.5" /> Xem đơn hàng
+            </Button>
+          </Link>
+        ) : (
+          <Link to="/my-bookings">
+            <Button size="sm">
+              <Ticket size={15} className="mr-1.5" /> Xem lịch đặt
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );
