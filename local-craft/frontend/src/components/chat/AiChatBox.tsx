@@ -40,10 +40,10 @@ const PRESET_LOCATIONS = [
 ];
 
 const INITIAL_SUGGESTED_PROMPTS = [
-  '📍 Lấy vị trí & tìm workshop gần tôi',
+  'Thời tiết Hội An hôm nay & gợi ý chuyến đi',
+  'Thời tiết hôm nay nên đi đâu?',
   'Lập lịch trình 1 ngày ở Hội An',
-  'Lịch sử làng gốm Bát Tràng',
-  'Gợi ý quán cà phê nghỉ ngơi',
+  'Workshop làm gốm gần tôi',
   'Cách đặt vé workshop & thanh toán',
 ];
 
@@ -207,6 +207,35 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
+  // Zero-click automatic location detection when chat opens or mounts
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const saved = locationService.getSavedLocation();
+    if (saved) {
+      setUserLocation(saved);
+      return;
+    }
+
+    // Auto-detect silently without prompting clicks (Browser GPS or Network IP lookup)
+    setIsLocating(true);
+    locationService
+      .getDirectLocation()
+      .then((loc) => {
+        if (loc) {
+          const resolved = { lat: loc.lat, lng: loc.lng, name: loc.name };
+          setUserLocation(resolved);
+          locationService.saveLocation(resolved);
+        }
+      })
+      .catch((err) => {
+        console.warn('[AiChatBox] Background auto-location failed:', err);
+      })
+      .finally(() => {
+        setIsLocating(false);
+      });
+  }, [isOpen]);
+
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
@@ -231,27 +260,23 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
 
     setInputText('');
 
-    // Check if user clicked the special prompt to get GPS location
+    // Ensure we always have active location resolved seamlessly
     let activeLocation = userLocation;
-    const lowerContent = content.toLowerCase();
-
-    if (
-      content === '📍 Lấy vị trí & tìm workshop gần tôi' ||
-      (!activeLocation &&
-        (lowerContent.includes('gần tôi') ||
-          lowerContent.includes('quanh tôi') ||
-          lowerContent.includes('vị trí của tôi')))
-    ) {
+    if (!activeLocation) {
       try {
-        const geoLoc = await handleGetBrowserLocation(true);
-        if (geoLoc) {
-          activeLocation = geoLoc;
-          if (content === '📍 Lấy vị trí & tìm workshop gần tôi') {
-            content = `Gợi ý cho tôi các workshop và làng nghề thủ công gần ${geoLoc.name}`;
-          }
+        const quickLoc = await Promise.race([
+          locationService.getDirectLocation(),
+          new Promise<{ lat: number; lng: number; name: string } | null>((resolve) =>
+            setTimeout(() => resolve(null), 2000)
+          ),
+        ]);
+        if (quickLoc) {
+          activeLocation = { lat: quickLoc.lat, lng: quickLoc.lng, name: quickLoc.name };
+          setUserLocation(activeLocation);
+          locationService.saveLocation(activeLocation);
         }
       } catch (e) {
-        console.warn('[AiChatBox] Auto locate on send error:', e);
+        console.warn('[AiChatBox] Quick direct location failed:', e);
       }
     }
 
@@ -572,11 +597,14 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
                   <>
                     {formatAiText(msg.content)}
                     {(msg.content.toLowerCase().includes('lịch trình') ||
-                      msg.content.toLowerCase().includes('hành trình')) && (
+                      msg.content.toLowerCase().includes('hành trình') ||
+                      msg.content.toLowerCase().includes('chuyến đi') ||
+                      msg.content.toLowerCase().includes('thời tiết') ||
+                      msg.content.toLowerCase().includes('đề xuất')) && (
                       <div className="mt-2.5 pt-2 border-t border-[#F0E6DE]">
                         <button
                           type="button"
-                          onClick={() => openItineraryModal()}
+                          onClick={() => openItineraryModal(msg.location?.name || 'Phố cổ Hội An')}
                           className="w-full py-2 px-3 rounded-xl bg-[#964824] hover:bg-[#7D3B1D] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                         >
                           <Calendar size={13} />

@@ -8,7 +8,7 @@
 
 import { WeatherData, getCurrentWeather } from './weather.service';
 import { NearbyPlace, findNearbyPlaces } from './nearbyPlace.service';
-import { isValidCoordinates } from './location.service';
+import { isValidCoordinates, calculateDistanceKm } from './location.service';
 import { env } from '../config/env';
 
 export interface RecommendedActivity extends NearbyPlace {
@@ -396,9 +396,71 @@ function generateFallbackResponse(
   targetName: string,
   weather: WeatherData,
   topRecommendations: RecommendedActivity[],
-  radiusKm: number
+  radiusKm: number,
+  originInfo?: { name: string; distanceKm?: number; travelTimeMinutes?: number }
 ): { replyText: string; suggestedPrompts: string[]; attachRecommendations: boolean } {
   const m = msg.toLowerCase();
+
+  // 0. Weather & Trip Recommendation Intent
+  if (
+    m.includes('thời tiết') ||
+    m.includes('chuyến đi') ||
+    m.includes('kế hoạch đi') ||
+    m.includes('đi chơi') ||
+    m.includes('đi đâu') ||
+    m.includes('hôm nay đi') ||
+    m.includes('đi hội an') ||
+    m.includes('đi đà nẵng') ||
+    m.includes('đi bát tràng') ||
+    m.includes('đi huế')
+  ) {
+    const isDifferentLocation = originInfo?.distanceKm && originInfo.distanceKm > 2;
+    const distanceText = isDifferentLocation
+      ? `\n- **Khoảng cách di chuyển**: Từ vị trí hiện tại của bạn (**${originInfo?.name || 'Vị trí hiện tại'}**) đến **${targetName}** khoảng **${originInfo.distanceKm} km** (~${originInfo.travelTimeMinutes} phút di chuyển).`
+      : `\n- **Vị trí của bạn**: Bạn đang ở ngay khu vực **${targetName}**.`;
+
+    const weatherConditionText = weather.isRainy
+      ? `Trời đang có mưa (${weather.rainProbability}%), nhiệt độ ${weather.temperature}°C. Bạn nên mang theo ô/áo mưa và ưu tiên trải nghiệm các workshop thủ công trong nhà ấm cúng!`
+      : weather.isHot
+      ? `Trời nhiều nắng, nhiệt độ ${weather.temperature}°C. Buổi sáng sớm hoặc chiều tà là lúc đẹp nhất để dạo phố; buổi trưa nên ghé xưởng thoáng mát hoặc quán cà phê nghỉ ngơi!`
+      : `Thời tiết tại ${targetName} hôm nay rất đẹp (${weather.condition}, ${weather.temperature}°C, gió nhẹ). Rất lý tưởng cho một chuyến du ngoạn làng nghề và trải nghiệm sáng tạo thủ công!`;
+
+    const tripSuggestion = weather.isRainy
+      ? `🧭 **Đề xuất chuyến đi phù hợp ngày mưa**:
+- **08:30 - 11:30**: Ghé thăm **Workshop làm gốm vuốt tay / làm đèn lồng trong nhà**, trải nghiệm nhào nặn đất sét hoặc căng lụa khung tre trong không gian khô ráo, ấm cúng.
+- **11:30 - 13:30**: Thưởng thức ẩm thực nóng hổi bản địa (Mì Quảng, Cao Lầu, Bánh xèo) tại các quán ăn truyền thống.
+- **13:30 - 15:30**: Nghỉ trưa tại **quán cà phê nhà cổ**, nhâm nhi tách trà thảo mộc ngắm mưa rơi trên mái ngói rêu phong.
+- **15:30 - 17:30**: Tham quan các cửa hàng trưng bày tác phẩm thủ công tinh xảo, chọn quà lưu niệm cho người thân.`
+      : weather.isHot
+      ? `🧭 **Đề xuất chuyến đi tránh nắng gắt**:
+- **08:00 - 10:30 (Sáng sớm mát mẻ)**: Khởi hành dạo quanh làng nghề cổ, chụp ảnh check-in và thăm các cụ nghệ nhân cao niên.
+- **10:30 - 12:30**: Tham gia **Workshop chế tác thủ công** trong xưởng có mái che rợp bóng cây, tự tay hoàn thiện sản phẩm độc bản.
+- **12:30 - 15:00 (Nghỉ trưa tránh nắng)**: Ăn trưa đặc sản và thư giãn tại quán cà phê sân vườn rợp bóng mát, thưởng trà thanh lọc cơ thể.
+- **15:30 - 18:00 (Chiều dịu mát)**: Thong thả dạo ngắm hoàng hôn ven sông và thưởng thức ẩm thực đường phố.`
+      : `🧭 **Đề xuất chuyến đi trọn vẹn trong ngày**:
+- **08:00 - 11:30**: Xuất phát ghé thăm các làng nghề truyền thống nổi tiếng, trải nghiệm thực tế tại **Workshop thủ công** (tự tay vuốt gốm, dệt lụa hoặc đan nón).
+- **11:30 - 13:30**: Thưởng thức bữa trưa ẩm thực dân gian địa phương.
+- **13:30 - 15:00**: **Nghỉ ngơi & Cà phê văn hóa xen kẽ** trong không gian mộc mạc hoài cổ.
+- **15:15 - 17:30**: Tham quan các gian hàng mỹ nghệ, trò chuyện cùng nghệ nhân và chọn đồ lưu niệm.
+- **17:30 - 20:00**: Dạo chơi phố đi bộ, đi thuyền ngắm hoàng hôn hoặc hoa đăng lung linh.`;
+
+    return {
+      replyText: `🌤️ **Thông tin Thời tiết & Đề xuất chuyến đi tại ${targetName}**:
+
+- **Thời tiết hiện tại**: ${weatherConditionText}${distanceText}
+
+${tripSuggestion}
+
+${topRecommendations.length > 0 ? `Bên dưới là **${topRecommendations.length} workshop và điểm đến nổi bật nhất** tại ${targetName} đã được chọn lọc phù hợp với điều kiện thời tiết hôm nay. Bạn có thể bấm **Xem chi tiết**, **Chỉ đường** hoặc mở **Lịch trình 1 ngày** để tùy chỉnh nhé!` : ''}`,
+      suggestedPrompts: [
+        `Mở lịch trình 1 ngày ở ${targetName}`,
+        `Workshop làm gốm tại ${targetName}`,
+        `Gợi ý quán cà phê nghỉ ngơi ở ${targetName}`,
+        'Cách đặt vé workshop trên web',
+      ],
+      attachRecommendations: true,
+    };
+  }
 
   // 1. Pottery / Gốm
   if (m.includes('gốm') || m.includes('bát tràng') || m.includes('thanh hà') || m.includes('chu đậu') || m.includes('nặn')) {
@@ -643,16 +705,21 @@ Bạn muốn tìm hiểu hoặc cần mình tư vấn điều gì hôm nay?`,
 export async function processAiChat(params: AiChatParams): Promise<AiChatResponse> {
   const msg = (params.message || '').trim().toLowerCase();
 
-  // 1. Determine target location
-  let targetLat: number =
+  // 1. Determine User Origin Location (real user coordinates or defaults)
+  const userOriginLat: number =
     typeof params.userLocation?.lat === 'number' && isValidCoordinates(params.userLocation.lat, params.userLocation?.lng)
       ? params.userLocation.lat
       : 16.0489;
-  let targetLng: number =
-    typeof params.userLocation?.lng === 'number' && isValidCoordinates(targetLat, params.userLocation.lng)
+  const userOriginLng: number =
+    typeof params.userLocation?.lng === 'number' && isValidCoordinates(userOriginLat, params.userLocation.lng)
       ? params.userLocation.lng
       : 108.2441;
-  let targetName: string = params.userLocation?.name || 'Vị trí của bạn';
+  const userOriginName: string = params.userLocation?.name || 'Vị trí của bạn';
+
+  // 2. Determine target destination (defaults to user's location unless destination is specified)
+  let targetLat: number = userOriginLat;
+  let targetLng: number = userOriginLng;
+  let targetName: string = userOriginName;
 
   if (msg.includes('hội an')) {
     targetLat = 15.8801;
@@ -676,7 +743,17 @@ export async function processAiChat(params: AiChatParams): Promise<AiChatRespons
     targetName = 'TP. Hồ Chí Minh';
   }
 
-  // 2. Determine craft preference / keyword
+  // Calculate distance & travel time from user's origin to target destination
+  let tripDistanceKm = 0;
+  let travelTimeMinutes = 0;
+  if (userOriginLat && userOriginLng && targetLat && targetLng) {
+    tripDistanceKm = Math.round(calculateDistanceKm(userOriginLat, userOriginLng, targetLat, targetLng) * 10) / 10;
+    if (tripDistanceKm > 1.5) {
+      travelTimeMinutes = Math.max(5, Math.round((tripDistanceKm / 35) * 60));
+    }
+  }
+
+  // 3. Determine craft preference / keyword
   let pref = params.preference || 'all';
   let craftKeyword = '';
 
@@ -751,6 +828,13 @@ export async function processAiChat(params: AiChatParams): Promise<AiChatRespons
     const baseUrl = (process.env.CHAT_API_BASE_URL || 'https://api.openai.com/v1').replace(/\/+$/, '');
     const model = process.env.CHAT_MODEL || 'gpt-4o-mini';
 
+    const isDifferentOrigin = tripDistanceKm > 2;
+    const originDistanceInfo = isDifferentOrigin
+      ? `- Vị trí xuất phát hiện tại của người dùng: ${userOriginName}
+- Điểm đến đang tìm hiểu: ${targetName}
+- Khoảng cách di chuyển từ vị trí người dùng đến điểm đến: khoảng ${tripDistanceKm} km (~${travelTimeMinutes} phút di chuyển bằng xe máy/ô tô)`
+      : `- Vị trí của người dùng: Đang ở ngay khu vực ${targetName}`;
+
     const systemPrompt = `Bạn là Trợ lý AI CraftLocal - chuyên gia hàng đầu về di sản văn hóa, làng nghề thủ công truyền thống Việt Nam và hướng dẫn du lịch trải nghiệm.
 
 NHIỆM VỤ CỦA BẠN:
@@ -764,14 +848,24 @@ NHIỆM VỤ CỦA BẠN:
    - Trò chuyện & giao tiếp tổng quát: Trả lời lịch sự, thông minh, tinh tế mọi câu hỏi khác của người dùng.
 
 THÔNG TIN ĐỊA PHƯƠNG & DỮ LIỆU THỰC TẾ TRÊN CRAFTLOCAL:
-- Vị trí hiện tại: ${targetName}
-- Thời tiết hiện tại: ${weather.condition}, ${weather.temperature}°C, khả năng mưa ${weather.rainProbability}%.
+${originDistanceInfo}
+- Thời tiết hiện tại tại ${targetName}: ${weather.condition}, ${weather.temperature}°C, khả năng mưa ${weather.rainProbability}%.
+- Đánh giá điều kiện thời tiết: ${weather.isRainy ? 'Có mưa, đường trơn trượt' : weather.isHot ? 'Nắng nóng, nhiệt độ cao' : 'Thời tiết lý tưởng, nắng ráo mát mẻ'}.
 - Các cơ sở/workshop có thật trong hệ thống gần khu vực này:
 ${topRecommendations.map((r, i) => `${i + 1}. ${r.name} (${r.typeLabel}, cách ${r.distanceLabel}, giá: ${r.priceLabel || 'Miễn phí'}, đánh giá ${r.rating}★)`).join('\n')}
 
 QUY TẮC PHẢN HỒI:
+- KHI NGƯỜI DÙNG HỎI THỜI TIẾT (ví dụ 'thời tiết Hội An', 'thời tiết hôm nay') HOẶC HỎI ĐỀ XUẤT CHUYẾN ĐI/LỊCH TRÌNH:
+  1. Phân tích rõ thời tiết hiện tại tại điểm đến (nhiệt độ, tình trạng mưa/nắng, độ ẩm, đánh giá điều kiện tham quan).
+  2. Báo cáo cụ thể khoảng cách và thời gian di chuyển từ vị trí hiện tại của người dùng đến điểm đến (nếu khác nhau).
+  3. ĐỀ XUẤT CHUYẾN ĐI PHÙ HỢP VỚI ĐIỀU KIỆN THỜI TIẾT:
+     - Nếu trời mưa: Gợi ý các xưởng làm thủ công trong nhà (vuốt gốm, dệt lụa, làm đèn lồng), quán cà phê nhà cổ có mái che, mang theo ô dù.
+     - Nếu trời nắng gắt: Buổi sáng sớm dạo làng nghề ngoài trời, buổi trưa vào xưởng mát hoặc quán cà phê nghỉ trưa tránh nắng, chiều muộn tiếp tục trải nghiệm.
+     - Nếu trời mát mẻ: Lộ trình kết hợp cả làng nghề ngoài trời, workshop thủ công và dạo ngắm phố.
+     - Phác thảo lịch trình tóm tắt: Buổi sáng, Buổi trưa, Buổi chiều/Tối.
+  4. Giới thiệu các workshop thực tế có trong danh sách trên và nhắc người dùng bấm nút Lịch trình 1 ngày bên dưới để xem chi tiết.
 - Nếu người dùng hỏi kiến thức văn hóa, lịch sử, kỹ thuật, cách sử dụng nền tảng: Hãy trả lời đầy đủ, chi tiết, cấu trúc rõ ràng với Markdown (tiêu đề, gạch đầu dòng, in đậm). Chỉ gợi ý nhẹ nhàng workshop thực tế nếu có liên quan trực tiếp đến nghề đó.
-- Nếu người dùng tìm kiếm địa điểm, hỏi thời tiết hoặc xin gợi ý nơi đi chơi: Hãy phân tích thời tiết và gợi ý các địa điểm có thật trong danh sách trên. KHÔNG tự bịa tên địa điểm hoặc thông tin sai lệch ngoài thực tế.
+- KHÔNG tự bịa tên địa điểm hoặc thông tin sai lệch ngoài thực tế.
 - Ở dòng cuối cùng của phản hồi, hãy đưa ra 3-4 câu hỏi gợi ý tiếp theo phù hợp với ngữ cảnh trò chuyện theo định dạng:
 <suggestions>["Câu hỏi gợi ý 1", "Câu hỏi gợi ý 2", "Câu hỏi gợi ý 3"]</suggestions>`;
 
@@ -838,7 +932,12 @@ QUY TẮC PHẢN HỒI:
       targetName,
       weather,
       topRecommendations,
-      radiusKm
+      radiusKm,
+      {
+        name: userOriginName,
+        distanceKm: tripDistanceKm,
+        travelTimeMinutes: travelTimeMinutes,
+      }
     );
     replyText = fallback.replyText;
     dynamicSuggestions = fallback.suggestedPrompts;
