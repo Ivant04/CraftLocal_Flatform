@@ -11,12 +11,18 @@ import {
   Star,
   Navigation,
   Loader2,
+  MapPin,
+  ChevronDown,
+  AlertCircle,
+  Check,
+  LocateFixed,
 } from 'lucide-react';
 import type {
   AiChatMessage,
   NearbyPlace,
 } from '../../types/recommendation.type';
 import { recommendationService } from '../../services/recommendationService';
+import { locationService } from '../../services/locationService';
 import ImageWithFallback from '../common/ImageWithFallback';
 import { useNearbyModal } from '../../context/NearbyModalContext';
 
@@ -25,10 +31,18 @@ interface AiChatBoxProps {
   onClose: () => void;
 }
 
+const PRESET_LOCATIONS = [
+  { name: 'Đà Nẵng', lat: 16.0544, lng: 108.2022, desc: 'Trung tâm TP. Đà Nẵng' },
+  { name: 'Phố cổ Hội An', lat: 15.8801, lng: 108.3380, desc: 'Làng gốm, đèn lồng, lụa' },
+  { name: 'Bát Tràng, Hà Nội', lat: 20.9782, lng: 105.9082, desc: 'Làng gốm Bát Tràng cổ truyền' },
+  { name: 'TP. Hồ Chí Minh', lat: 10.7769, lng: 106.7009, desc: 'Quận 1, xưởng sáng tạo' },
+  { name: 'Cố đô Huế', lat: 16.4637, lng: 107.5909, desc: 'Nón lá, đúc đồng, kim hoàn' },
+];
+
 const INITIAL_SUGGESTED_PROMPTS = [
+  'Thời tiết Hội An hôm nay & gợi ý chuyến đi',
+  'Thời tiết hôm nay nên đi đâu?',
   'Lập lịch trình 1 ngày ở Hội An',
-  'Lịch sử làng gốm Bát Tràng',
-  'Gợi ý quán cà phê nghỉ ngơi',
   'Workshop làm gốm gần tôi',
   'Cách đặt vé workshop & thanh toán',
 ];
@@ -92,13 +106,135 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
   const [inputText, setInputText] = useState<string>('');
   const [isThinking, setIsThinking] = useState<boolean>(false);
 
+  // User location state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; name: string } | null>(() => {
+    return locationService.getSavedLocation();
+  });
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState<boolean>(false);
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Get user's actual browser GPS location
+  const handleGetBrowserLocation = async (isSilent: boolean = false) => {
+    setIsLocating(true);
+    setLocationError(null);
+
+    try {
+      const geo = await locationService.getBrowserGeolocation(15000);
+      const newLoc = {
+        lat: geo.lat,
+        lng: geo.lng,
+        name: geo.name || `Tọa độ (${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)})`,
+      };
+
+      locationService.saveLocation(newLoc);
+      setUserLocation(newLoc);
+      setShowLocationPicker(false);
+
+      if (!isSilent) {
+        const confirmMsg: AiChatMessage = {
+          id: `loc-success-${Date.now()}`,
+          role: 'assistant',
+          content: `📍 **Đã xác định vị trí thực tế của bạn**: **${newLoc.name}**\n\n- Độ chính xác: ${geo.accuracyLabel}\n- Tọa độ GPS: \`${newLoc.lat.toFixed(4)}, ${newLoc.lng.toFixed(4)}\`\n\nMình đã cập nhật vị trí này. Tất cả tính toán khoảng cách và gợi ý workshop sắp tới sẽ dựa trên vị trí thực tế của bạn!`,
+          suggestedPrompts: [
+            'Workshop thủ công gần tôi nhất',
+            'Lịch trình 1 ngày quanh khu vực này',
+            'Thời tiết hôm nay thế nào?',
+          ],
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+      }
+
+      return newLoc;
+    } catch (err: any) {
+      console.warn('[AiChatBox] Geolocation failed:', err);
+      const errMsg =
+        err?.message ||
+        'Không thể lấy vị trí hiện tại. Vui lòng cho phép quyền truy cập Vị trí trên trình duyệt hoặc chọn khu vực.';
+      setLocationError(errMsg);
+
+      if (!isSilent) {
+        const failMsg: AiChatMessage = {
+          id: `loc-err-${Date.now()}`,
+          role: 'assistant',
+          content: `⚠️ **Không thể tự động lấy vị trí GPS**: ${errMsg}\n\n*Cách xử lý*: Bạn hãy nhấn vào biểu tượng ổ khóa/cài đặt trên thanh địa chỉ URL của trình duyệt, bật **Cho phép Vị trí**, rồi thử lại. Hoặc bạn có thể chọn nhanh khu vực bên dưới!`,
+          suggestedPrompts: [
+            'Đà Nẵng',
+            'Phố cổ Hội An',
+            'Bát Tràng, Hà Nội',
+            'TP. Hồ Chí Minh',
+            'Cố đô Huế',
+          ],
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, failMsg]);
+      }
+
+      return null;
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
+  // Switch location via preset
+  const handleSelectPreset = (preset: { name: string; lat: number; lng: number; desc: string }) => {
+    const loc = { lat: preset.lat, lng: preset.lng, name: preset.name };
+    locationService.saveLocation(loc);
+    setUserLocation(loc);
+    setShowLocationPicker(false);
+    setLocationError(null);
+
+    const switchMsg: AiChatMessage = {
+      id: `preset-${Date.now()}`,
+      role: 'assistant',
+      content: `📍 Đã chuyển khu vực tìm kiếm sang: **${preset.name}** (*${preset.desc}*).\n\nBạn muốn tìm hiểu workshop hay làng nghề truyền thống nào tại đây?`,
+      suggestedPrompts: [
+        `Workshop làm gốm ở ${preset.name}`,
+        `Lịch trình 1 ngày ở ${preset.name}`,
+        `Thời tiết hôm nay ở ${preset.name}`,
+      ],
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, switchMsg]);
+  };
 
   // Scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  // Zero-click automatic location detection when chat opens or mounts
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const saved = locationService.getSavedLocation();
+    if (saved) {
+      setUserLocation(saved);
+      return;
+    }
+
+    // Auto-detect silently without prompting clicks (Browser GPS or Network IP lookup)
+    setIsLocating(true);
+    locationService
+      .getDirectLocation()
+      .then((loc) => {
+        if (loc) {
+          const resolved = { lat: loc.lat, lng: loc.lng, name: loc.name };
+          setUserLocation(resolved);
+          locationService.saveLocation(resolved);
+        }
+      })
+      .catch((err) => {
+        console.warn('[AiChatBox] Background auto-location failed:', err);
+      })
+      .finally(() => {
+        setIsLocating(false);
+      });
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -119,10 +255,30 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
 
   // Send Chat message handler
   const handleSendMessage = async (textToSend?: string) => {
-    const content = (textToSend || inputText).trim();
+    let content = (textToSend || inputText).trim();
     if (!content || isThinking) return;
 
     setInputText('');
+
+    // Ensure we always have active location resolved seamlessly
+    let activeLocation = userLocation;
+    if (!activeLocation) {
+      try {
+        const quickLoc = await Promise.race([
+          locationService.getDirectLocation(),
+          new Promise<{ lat: number; lng: number; name: string } | null>((resolve) =>
+            setTimeout(() => resolve(null), 2000)
+          ),
+        ]);
+        if (quickLoc) {
+          activeLocation = { lat: quickLoc.lat, lng: quickLoc.lng, name: quickLoc.name };
+          setUserLocation(activeLocation);
+          locationService.saveLocation(activeLocation);
+        }
+      } catch (e) {
+        console.warn('[AiChatBox] Quick direct location failed:', e);
+      }
+    }
 
     // Append user message
     const userMsg: AiChatMessage = {
@@ -145,6 +301,13 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
       const res = await recommendationService.sendChat({
         message: content,
         history,
+        userLocation: activeLocation
+          ? {
+              lat: activeLocation.lat,
+              lng: activeLocation.lng,
+              name: activeLocation.name,
+            }
+          : undefined,
       });
 
       // Append assistant response
@@ -222,7 +385,12 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
               type="button"
               onClick={() => {
                 const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-                openItineraryModal(lastUser?.content);
+                openItineraryModal(
+                  lastUser?.content ||
+                    (userLocation
+                      ? `Lịch trình 1 ngày ở ${userLocation.name}`
+                      : 'Đi Hội An 1 ngày: làm gốm, dệt lụa và cà phê nghỉ ngơi')
+                );
               }}
               className="p-1.5 rounded-lg text-stone-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               title="Lập lịch trình 1 ngày bằng AI"
@@ -254,6 +422,144 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
             </button>
           </div>
         </div>
+
+        {/* Location Status Bar */}
+        <div className="bg-[#FAF5EF] px-3.5 py-2 border-b border-[#EAD8CC] flex items-center justify-between gap-2 text-xs shrink-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span className="text-[#964824] shrink-0">
+              <MapPin size={13} />
+            </span>
+            <span className="text-[#7A6255] font-medium shrink-0">Vị trí:</span>
+            <span
+              className="font-bold text-[#3D2B1F] truncate"
+              title={
+                userLocation
+                  ? `${userLocation.name} (${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)})`
+                  : 'Đang dùng vị trí mặc định (Đà Nẵng)'
+              }
+            >
+              {userLocation ? userLocation.name : 'Đà Nẵng (Mặc định)'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleGetBrowserLocation(false)}
+              disabled={isLocating}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#964824] hover:bg-[#7D3B1D] text-white font-medium text-[11px] shadow-2xs transition-all cursor-pointer disabled:opacity-60"
+              title="Lấy chính xác tọa độ GPS hiện tại từ trình duyệt"
+            >
+              {isLocating ? (
+                <>
+                  <Loader2 size={11} className="animate-spin" />
+                  <span>Đang lấy...</span>
+                </>
+              ) : (
+                <>
+                  <Navigation size={11} />
+                  <span>Lấy vị trí của tôi</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowLocationPicker((prev) => !prev)}
+              className="px-2 py-1 rounded-lg border border-[#EAD8CC] bg-white hover:bg-stone-50 text-[#7A6255] font-medium text-[11px] transition-colors cursor-pointer flex items-center gap-0.5"
+              title="Chọn tỉnh/thành phố khác"
+            >
+              <span>{showLocationPicker ? 'Đóng' : 'Đổi'}</span>
+              <ChevronDown
+                size={11}
+                className={`transition-transform duration-200 ${
+                  showLocationPicker ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Location Selector Dropdown Panel */}
+        {showLocationPicker && (
+          <div className="bg-white border-b border-[#EAD8CC] p-3 text-xs shadow-inner animate-in fade-in slide-in-from-top-2 duration-200 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-[#3D2B1F]">
+                Chọn vị trí tìm kiếm workshop:
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowLocationPicker(false)}
+                className="text-stone-400 hover:text-stone-600 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* GPS Locate Button */}
+            <button
+              type="button"
+              onClick={() => handleGetBrowserLocation(false)}
+              disabled={isLocating}
+              className="w-full mb-2.5 py-2 px-3 rounded-xl bg-[#FAF5EF] hover:bg-[#964824]/10 border border-[#EAD8CC] hover:border-[#964824] text-[#964824] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-60"
+            >
+              {isLocating ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Đang kết nối GPS thiết bị...</span>
+                </>
+              ) : (
+                <>
+                  <LocateFixed size={13} />
+                  <span>Lấy tọa độ GPS thiết bị hiện tại</span>
+                </>
+              )}
+            </button>
+
+            {locationError && (
+              <div className="mb-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-1.5">
+                <AlertCircle size={13} className="shrink-0 mt-0.5 text-amber-600" />
+                <div>
+                  <p className="font-semibold">Không thể truy cập GPS:</p>
+                  <p>{locationError}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="text-[11px] font-medium text-[#7A6255] mb-1.5">
+              Hoặc chọn nhanh điểm đến du lịch:
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {PRESET_LOCATIONS.map((preset) => {
+                const isSelected = userLocation?.name === preset.name;
+                return (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => handleSelectPreset(preset)}
+                    className={`py-1.5 px-2.5 rounded-lg text-left border transition-all cursor-pointer flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-[#964824] text-white border-[#964824]'
+                        : 'bg-[#FAF9F5] hover:bg-white text-[#3D2B1F] border-[#EAD8CC] hover:border-[#964824]/40'
+                    }`}
+                  >
+                    <div className="truncate">
+                      <div className="font-bold truncate">{preset.name}</div>
+                      <div
+                        className={`text-[10px] truncate ${
+                          isSelected ? 'text-stone-200' : 'text-[#7A6255]'
+                        }`}
+                      >
+                        {preset.desc}
+                      </div>
+                    </div>
+                    {isSelected && <Check size={12} className="shrink-0 ml-1" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Messages Scroll Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAF9F5]">
@@ -291,11 +597,14 @@ export const AiChatBox: React.FC<AiChatBoxProps> = ({ isOpen, onClose }) => {
                   <>
                     {formatAiText(msg.content)}
                     {(msg.content.toLowerCase().includes('lịch trình') ||
-                      msg.content.toLowerCase().includes('hành trình')) && (
+                      msg.content.toLowerCase().includes('hành trình') ||
+                      msg.content.toLowerCase().includes('chuyến đi') ||
+                      msg.content.toLowerCase().includes('thời tiết') ||
+                      msg.content.toLowerCase().includes('đề xuất')) && (
                       <div className="mt-2.5 pt-2 border-t border-[#F0E6DE]">
                         <button
                           type="button"
-                          onClick={() => openItineraryModal()}
+                          onClick={() => openItineraryModal(msg.location?.name || 'Phố cổ Hội An')}
                           className="w-full py-2 px-3 rounded-xl bg-[#964824] hover:bg-[#7D3B1D] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer"
                         >
                           <Calendar size={13} />
