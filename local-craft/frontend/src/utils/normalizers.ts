@@ -154,7 +154,6 @@ export const normalizeTimeslot = (raw: any): Timeslot => {
     endTimeLabel: formatTimeOnly(raw?.endTime),
     totalSlots: Number(raw?.totalSlots ?? 0),
     bookedSlots: Number(raw?.bookedSlots ?? 0),
-    pendingSlots: Number(raw?.pendingSlots ?? 0),
     availableSlots: Number(raw?.availableSlots ?? 0),
     price: raw?.price !== undefined ? Number(raw.price) : undefined,
     status: raw?.status || 'AVAILABLE',
@@ -171,6 +170,14 @@ export const normalizeBooking = (raw: any): Booking => {
   const touristObj = raw?.touristId && typeof raw.touristId === 'object' ? raw.touristId : null;
   const ticketObj = raw?.ticketId && typeof raw.ticketId === 'object' ? raw.ticketId : null;
   const wsImages = wsObj?.images ? resolveImageList(wsObj.images) : [];
+
+  const rawStatus = raw?.status || raw?.bookingStatus || 'PENDING';
+  const isCheckedIn =
+    rawStatus === 'CHECKED_IN' ||
+    rawStatus === 'COMPLETED' ||
+    Boolean(raw?.checkedInAt) ||
+    raw?.checkInStatus === 'CHECKED_IN' ||
+    ticketObj?.status === 'USED';
 
   return {
     _id: String(raw?._id || ''),
@@ -189,8 +196,9 @@ export const normalizeBooking = (raw: any): Booking => {
     touristPhone: touristObj?.phone || raw?.customerInfo?.phone,
     guests: Number(raw?.guests ?? raw?.quantity ?? 1),
     totalAmount: Number(raw?.totalAmount ?? raw?.totalPrice ?? 0),
-    status: raw?.status || raw?.bookingStatus || 'PENDING',
-    qrCode: raw?.qrCode || raw?.qrToken || ticketObj?.qrToken,
+    status: isCheckedIn ? 'CHECKED_IN' : (rawStatus as any),
+    checkInStatus: isCheckedIn ? 'CHECKED_IN' : 'PENDING',
+    qrCode: raw?.qrCode || raw?.qrToken || ticketObj?.qrToken || raw?.bookingCode,
     canReview: Boolean(raw?.canReview),
     checkedInAt: raw?.checkedInAt,
     createdAt: raw?.createdAt || '',
