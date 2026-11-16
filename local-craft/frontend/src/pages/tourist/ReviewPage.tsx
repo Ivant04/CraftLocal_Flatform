@@ -61,10 +61,10 @@ const ReviewPage: React.FC = () => {
   if (!booking) {
     return (
       <div className="max-w-md mx-auto px-5 py-24 text-center">
-        <h2 className="text-2xl font-headline font-bold text-deep-earth mb-2">Không tìm thấy lịch đặt</h2>
-        <p className="text-on-surface-variant mb-6">Lịch đặt không tồn tại để đánh giá.</p>
+        <h2 className="text-2xl font-serif font-bold text-[#3D2B1F] mb-2">Không tìm thấy lịch đặt</h2>
+        <p className="text-[#7A6255] text-sm mb-6">Lịch đặt không tồn tại hoặc đã bị hủy.</p>
         <Link to="/my-bookings">
-          <Button variant="primary">Quay lại danh sách lịch đặt</Button>
+          <Button>Quay lại lịch đặt chỗ</Button>
         </Link>
       </div>
     );
@@ -100,69 +100,81 @@ const ReviewPage: React.FC = () => {
       <div className="max-w-xl mx-auto">
         <Link
           to="/my-bookings"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors mb-6"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#7A6255] hover:text-[#964824] transition-colors mb-6"
         >
           <ArrowLeft size={16} /> Quay lại lịch đặt
         </Link>
 
-        <div className="bg-white rounded-3xl border border-outline-subtle p-7 md:p-10 shadow-lg relative overflow-hidden">
+        <div className="bg-white rounded-3xl border border-[#EAD8CC] p-7 md:p-10 shadow-lg relative overflow-hidden">
           {submitted ? (
-            <div className="text-center py-10">
-              <div className="w-16 h-16 rounded-full bg-forest-50 text-forest flex items-center justify-center mx-auto mb-4">
+            <div className="text-center py-10 space-y-3">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
                 <CheckCircle2 size={36} />
               </div>
-              <h2 className="font-headline text-2xl font-bold text-deep-earth mb-2">
+              <h2 className="font-serif text-2xl font-bold text-[#3D2B1F]">
                 Cảm ơn bạn đã đóng góp đánh giá!
               </h2>
-              <p className="text-on-surface-variant text-sm mb-4">
+              <p className="text-[#7A6255] text-xs md:text-sm max-w-sm mx-auto">
                 Những chia sẻ chân thực của bạn là nguồn động viên to lớn giúp nghệ nhân ngày càng hoàn thiện workshop.
               </p>
-              <span className="text-xs text-primary font-medium animate-pulse">
-                Đang chuyển hướng về lịch đặt của bạn...
-              </span>
+              <p className="text-xs text-[#964824] font-medium animate-pulse">
+                Đang chuyển hướng về trang lịch đặt chỗ...
+              </p>
             </div>
           ) : (
             <>
-              {/* Header */}
-              <div className="mb-8">
-                <span className="text-xs uppercase font-bold tracking-wider text-primary">Đánh giá trải nghiệm</span>
-                <h1 className="font-headline text-2xl md:text-3xl font-bold text-deep-earth mt-1">
-                  Cảm nhận của bạn về buổi thực hành
+              <div className="text-center mb-8">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#964824]">
+                  Cảm nhận trải nghiệm
+                </span>
+                <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#3D2B1F] mt-1">
+                  Đánh giá Workshop
                 </h1>
+                <p className="text-xs md:text-sm text-[#7A6255] mt-1">
+                  Góp ý chân thành của bạn giúp giữ gìn và nâng tầm nghệ thuật thủ công truyền thống.
+                </p>
+              </div>
 
-                <div className="mt-4 p-4 rounded-2xl bg-surface-warm border border-outline-subtle flex items-center gap-3">
-                  {booking.workshopImage && (
-                    <ImageWithFallback
-                      src={booking.workshopImage}
-                      alt={booking.workshopTitle}
-                      className="w-12 h-12 rounded-xl object-cover shrink-0 border border-outline-subtle"
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-bold text-deep-earth text-sm truncate">{booking.workshopTitle}</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">Ngày trải nghiệm: {booking.timeslotDate}</p>
-                  </div>
+              {/* Workshop Card Mini */}
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#FAF7F2] border border-[#EAD8CC] mb-6">
+                <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-[#EAD8CC]">
+                  <ImageWithFallback
+                    src={booking.workshopImage}
+                    alt={booking.workshopTitle}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-sm text-[#3D2B1F] line-clamp-1">
+                    {booking.workshopTitle}
+                  </h3>
+                  <p className="text-xs text-[#7A6255] mt-0.5">
+                    Mã vé: <span className="font-mono font-semibold">{booking.bookingCode}</span>
+                  </p>
+                  <p className="text-xs text-[#7A6255]">
+                    Ngày tham gia: <span>{booking.date}</span>
+                  </p>
                 </div>
               </div>
 
               {error && (
-                <div className="mb-5 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm flex items-center gap-2">
+                <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
                   <AlertCircle size={16} className="shrink-0" />
-                  {error}
+                  <span>{error}</span>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Star Selector */}
-                <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-deep-earth block mb-2">
-                    Mức độ hài lòng của bạn
+                {/* Rating Stars */}
+                <div className="text-center space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#7A6255] block">
+                    Mức độ hài lòng chung
                   </label>
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center justify-center gap-2 py-2">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
-                        key={n}
                         type="button"
+                        key={n}
                         onMouseEnter={() => setHoverRating(n)}
                         onMouseLeave={() => setHoverRating(null)}
                         onClick={() => setRating(n)}
@@ -172,32 +184,32 @@ const ReviewPage: React.FC = () => {
                           size={32}
                           className={`${
                             n <= currentScore
-                              ? 'text-accent-gold fill-accent-gold'
-                              : 'text-outline-variant'
+                              ? 'text-amber-500 fill-amber-500'
+                              : 'text-stone-300'
                           } transition-colors`}
                         />
                       </button>
                     ))}
                   </div>
-                  <span className="text-xs font-semibold text-primary block">
+                  <span className="text-xs font-semibold text-[#964824] block">
                     {ratingLabels[currentScore]}
                   </span>
                 </div>
 
                 {/* Suggestions */}
-                <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/15 text-xs text-on-surface-variant space-y-1">
-                  <p className="font-bold text-deep-earth flex items-center gap-1.5">
-                    <Sparkles size={14} className="text-primary" /> Bạn có thể chia sẻ thêm về:
+                <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAD8CC] text-xs text-[#7A6255] space-y-1">
+                  <p className="font-bold text-[#3D2B1F] flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-[#964824]" /> Bạn có thể chia sẻ thêm về:
                   </p>
-                  <p>• Thái độ hướng dẫn và sự nhiệt tình của nghệ nhân.</p>
-                  <p>• Không gian và dụng cụ thực hành tại xưởng.</p>
-                  <p>• Tác phẩm thủ công tự tay bạn mang về.</p>
+                  <p>• Thái độ hướng dẫn và sự nhiệt tình của nghệ nhân/HDV.</p>
+                  <p>• Không gian xưởng và dụng cụ thực hành làng nghề.</p>
+                  <p>• Tác phẩm thủ công tự tay bạn sáng tạo và mang về.</p>
                 </div>
 
                 {/* Comment Box */}
                 <div>
                   <Textarea
-                    label="Lời bình luận & góp ý"
+                    label="Lời bình luận & góp ý cho xưởng"
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Kể lại cảm xúc, kỷ niệm đáng nhớ hoặc góp ý để xưởng phục vụ tốt hơn..."
@@ -210,7 +222,6 @@ const ReviewPage: React.FC = () => {
                   type="submit"
                   fullWidth
                   size="lg"
-                  variant="primary"
                   isLoading={submitting}
                   className="py-3.5 font-bold shadow-md"
                 >

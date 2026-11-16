@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Calendar, ShoppingBag, CheckCircle2 } from 'lucide-react';
+import { Package, Calendar, ShoppingBag, CheckCircle2, Truck, Box, Clock, ChevronRight } from 'lucide-react';
 import orderApi from '../../api/orderApi';
 import { normalizeOrder } from '../../utils/normalizers';
 import type { Order } from '../../types/order.type';
@@ -30,7 +30,7 @@ const MyOrdersPage: React.FC = () => {
         setOrders(Array.isArray(list) ? list.map(normalizeOrder) : []);
       })
       .catch((err) => {
-        if (active) setError(err?.response?.data?.message || 'Không tải được danh sách đơn hàng.');
+        if (active) setError(err?.response?.data?.message || 'Không thể tải danh sách đơn hàng.');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -53,36 +53,50 @@ const MyOrdersPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-primary">Tài khoản du khách</span>
-            <h1 className="font-headline text-2xl md:text-3xl lg:text-4xl font-bold text-deep-earth mt-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#964824]">
+              Tài khoản du khách
+            </span>
+            <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold text-[#3D2B1F] mt-1">
               Đơn hàng thủ công của tôi
             </h1>
-            <p className="text-xs md:text-sm text-on-surface-variant mt-1">
-              Theo dõi tiến độ chế tác và vận chuyển sản phẩm từ các nghệ nhân
+            <p className="text-xs md:text-sm text-[#7A6255] mt-1">
+              Theo dõi tiến độ chế tác và vận chuyển sản phẩm từ các nghệ nhân làng nghề truyền thống.
             </p>
           </div>
           <Link to="/products">
-            <Button variant="primary" size="md">
-              <ShoppingBag size={16} className="mr-1.5" /> Mua thêm sản phẩm
+            <Button size="sm" variant="outline" className="shadow-xs">
+              <ShoppingBag size={15} className="mr-1.5" /> Khám phá thêm sản phẩm
             </Button>
           </Link>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-outline-subtle">
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 border-b border-[#EAD8CC]">
           {[
-            { id: 'ALL', label: 'Tất cả đơn hàng', count: orders.length },
-            { id: 'PENDING', label: 'Đang xử lý / Chờ xác nhận', count: orders.filter((o) => o.status === 'PENDING' || o.status === 'CONFIRMED' || o.status === 'PACKING').length },
-            { id: 'SHIPPING', label: 'Đang giao hàng', count: orders.filter((o) => o.status === 'SHIPPING').length },
-            { id: 'COMPLETED', label: 'Đã giao thành công', count: orders.filter((o) => o.status === 'COMPLETED').length },
+            { key: 'ALL', label: 'Tất cả đơn', count: orders.length },
+            {
+              key: 'PENDING',
+              label: 'Chờ đóng gói',
+              count: orders.filter((o) => o.status === 'PENDING' || o.status === 'CONFIRMED' || o.status === 'PACKING').length,
+            },
+            {
+              key: 'SHIPPING',
+              label: 'Đang vận chuyển',
+              count: orders.filter((o) => o.status === 'SHIPPING').length,
+            },
+            {
+              key: 'COMPLETED',
+              label: 'Đã hoàn thành',
+              count: orders.filter((o) => o.status === 'COMPLETED').length,
+            },
           ].map((tab) => (
             <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id as any)}
-              className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
-                filter === tab.id
-                  ? 'bg-deep-earth text-white shadow-xs'
-                  : 'bg-white border border-outline-subtle text-on-surface-variant hover:text-deep-earth hover:border-outline-variant'
+              key={tab.key}
+              onClick={() => setFilter(tab.key as any)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                filter === tab.key
+                  ? 'bg-[#964824] text-white shadow-xs'
+                  : 'bg-white border border-[#EAD8CC] text-[#7A6255] hover:text-[#3D2B1F] hover:bg-[#FAF7F2]'
               }`}
             >
               {tab.label} ({tab.count})
@@ -90,99 +104,105 @@ const MyOrdersPage: React.FC = () => {
           ))}
         </div>
 
+        {/* Loading / Error / Content */}
         {loading ? (
-          <div className="py-16 flex justify-center">
+          <div className="py-20 flex justify-center">
             <Loading />
           </div>
         ) : error ? (
-          <div className="bg-white rounded-2xl border border-red-200 p-8 text-center text-red-700 text-sm">
+          <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-sm text-center">
             {error}
           </div>
         ) : filteredOrders.length === 0 ? (
-          <EmptyState
-            title="Chưa có đơn hàng nào"
-            description="Bạn hiện chưa có đơn đặt mua tác phẩm thủ công nào trong danh mục này."
-            action={
-              <Link to="/products">
-                <Button variant="primary">Khám phá Cửa hàng Thủ công</Button>
-              </Link>
-            }
-          />
+          <div className="bg-white rounded-3xl border border-[#EAD8CC] p-12 text-center shadow-xs">
+            <EmptyState
+              title="Không có đơn hàng nào"
+              description="Bạn chưa có đơn đặt mua sản phẩm thủ công nào trong mục này."
+              icon={<Package size={48} className="text-[#964824] opacity-50" />}
+              action={
+                <Link to="/products">
+                  <Button>Mua sắm ngay</Button>
+                </Link>
+              }
+            />
+          </div>
         ) : (
-          <div className="space-y-5">
-            {filteredOrders.map((o) => {
-              const statusVariant =
-                o.status === 'COMPLETED' ? 'success' :
-                o.status === 'SHIPPING' ? 'earth' :
-                o.status === 'CONFIRMED' ? 'heritage' : 'subtle';
-
-              return (
-                <div
-                  key={o._id}
-                  className="bg-white rounded-2xl border border-outline-subtle p-5 md:p-6 shadow-xs hover:border-primary/30 transition-all"
-                >
-                  {/* Top order bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-outline-subtle">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Package size={20} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm md:text-base text-deep-earth">
-                            Đơn hàng {o.orderCode || `#${o._id.slice(-6).toUpperCase()}`}
-                          </span>
-                          <Badge variant={statusVariant} size="sm">
-                            {ORDER_STATUS_LABELS[o.status] || o.status}
-                          </Badge>
-                        </div>
-                        <span className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
-                          <Calendar size={12} /> Đặt ngày {formatDate(o.createdAt)}
-                        </span>
-                      </div>
+          <div className="space-y-4">
+            {filteredOrders.map((o) => (
+              <div
+                key={o._id}
+                className="bg-white rounded-2xl border border-[#EAD8CC] p-5 md:p-6 shadow-xs hover:border-[#964824]/40 hover:shadow-[0_8px_30px_rgba(61,43,31,0.06)] transition-all"
+              >
+                {/* Order Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-[#EAD8CC]/60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#964824]/10 border border-[#964824]/20 flex items-center justify-center text-[#964824] shrink-0">
+                      <Package size={20} />
                     </div>
-
-                    <div className="text-right">
-                      <span className="text-xs text-on-surface-variant block">Tổng thanh toán</span>
-                      <strong className="text-primary font-bold text-base md:text-lg font-headline">
-                        {formatCurrencyShort(o.totalAmount)}
-                      </strong>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-serif font-bold text-sm md:text-base text-[#3D2B1F]">
+                          Đơn hàng {o.orderCode || `#${o._id.slice(-6).toUpperCase()}`}
+                        </span>
+                        <Badge
+                          variant={
+                            o.status === 'COMPLETED'
+                              ? 'success'
+                              : o.status === 'SHIPPING'
+                              ? 'info'
+                              : o.status === 'CANCELLED'
+                              ? 'danger'
+                              : 'warning'
+                          }
+                          size="sm"
+                        >
+                          {ORDER_STATUS_LABELS[o.status] || o.status}
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-[#7A6255] flex items-center gap-1 mt-0.5">
+                        <Calendar size={12} /> Đặt ngày {formatDate(o.createdAt)}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Items list */}
-                  <div className="space-y-2.5 mb-4">
-                    {o.items.map((item) => (
-                      <div
-                        key={item.productId}
-                        className="flex items-center justify-between p-3 rounded-xl bg-surface-warm/60 border border-outline-subtle text-xs md:text-sm"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-2 h-2 rounded-full bg-primary/40 shrink-0" />
-                          <span className="font-semibold text-deep-earth">{item.productName}</span>
-                          <span className="text-on-surface-variant">× {item.quantity}</span>
-                        </div>
-                        <span className="font-mono font-medium text-deep-earth">
-                          {formatCurrencyShort(item.price * item.quantity)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Order Footer */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-outline-subtle text-xs">
-                    <div className="flex items-center gap-1.5 text-forest font-semibold">
-                      <CheckCircle2 size={15} /> Đóng gói chống vỡ & Bảo hành làng nghề
-                    </div>
-                    <div className="flex gap-2">
-                      <Link to="/products">
-                        <Button size="sm" variant="ghost">Mua lại tác phẩm</Button>
-                      </Link>
-                    </div>
+                  <div className="text-right">
+                    <span className="text-xs text-[#7A6255] block">Tổng thanh toán</span>
+                    <strong className="text-[#964824] font-bold text-base md:text-lg font-serif">
+                      {formatCurrencyShort(o.totalAmount)}
+                    </strong>
                   </div>
                 </div>
-              );
-            })}
+
+                {/* Items List */}
+                <div className="space-y-2 mb-4">
+                  {o.items.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 rounded-xl bg-[#FAF7F2] border border-[#EAD8CC] text-xs md:text-sm"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[#3D2B1F]">{item.productName}</span>
+                        <span className="text-[#7A6255]">× {item.quantity}</span>
+                      </div>
+                      <span className="font-mono font-medium text-[#3D2B1F]">
+                        {formatCurrencyShort(item.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Order Footer */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[#EAD8CC]/60 text-xs">
+                  <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                    <CheckCircle2 size={14} className="text-emerald-600" />
+                    <span>Giao đến: {o.shippingAddress}</span>
+                  </div>
+                  <span className="text-[#7A6255]">
+                    Phương thức: <strong className="text-[#3D2B1F]">{o.paymentMethod || 'PAYOS'}</strong>
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

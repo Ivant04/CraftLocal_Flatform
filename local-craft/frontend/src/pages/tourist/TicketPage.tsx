@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Calendar, Clock, Users, MapPin, Printer, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Users, MapPin, Printer, ArrowLeft, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
 import bookingApi from '../../api/bookingApi';
 import { normalizeBooking } from '../../utils/normalizers';
 import type { Booking } from '../../types/booking.type';
 import { formatTime } from '../../utils/formatDate';
 import { BOOKING_STATUS_LABELS } from '../../utils/constants';
 import Button from '../../components/common/Button';
-import Badge from '../../components/common/Badge';
 import Loading from '../../components/common/Loading';
 import BrandLogo from '../../components/common/BrandLogo';
 
@@ -48,19 +47,19 @@ const TicketPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto px-5 py-24 flex justify-center">
+      <div className="min-h-screen bg-craft-contour flex items-center justify-center py-20">
         <Loading />
       </div>
     );
   }
 
-  if (!booking || error) {
+  if (!booking) {
     return (
-      <div className="max-w-md mx-auto px-5 py-24 text-center">
-        <h2 className="text-2xl font-headline font-bold text-deep-earth mb-2">Không tìm thấy vé</h2>
-        <p className="text-on-surface-variant mb-6">{error || 'Mã vé không tồn tại hoặc đã bị hủy.'}</p>
+      <div className="min-h-screen bg-craft-contour flex flex-col items-center justify-center py-20 px-5 text-center">
+        <h2 className="text-2xl font-serif font-bold text-[#3D2B1F] mb-2">Không tìm thấy vé</h2>
+        <p className="text-[#7A6255] text-sm mb-6">{error || 'Mã vé không tồn tại hoặc đã bị hủy.'}</p>
         <Link to="/my-bookings">
-          <Button variant="primary">Xem danh sách lịch đặt</Button>
+          <Button>Quay lại danh sách vé</Button>
         </Link>
       </div>
     );
@@ -72,137 +71,128 @@ const TicketPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-craft-contour py-12 px-5">
-      <div className="max-w-lg mx-auto">
-        {/* Back Link */}
-        <div className="mb-6 flex items-center justify-between">
+      <div className="max-w-xl mx-auto">
+        {/* Navigation & Print Button */}
+        <div className="flex items-center justify-between mb-6">
           <Link
             to="/my-bookings"
-            className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#7A6255] hover:text-[#964824] transition-colors"
           >
-            <ArrowLeft size={16} /> Quay lại lịch đặt
+            <ArrowLeft size={16} /> Quay lại lịch đặt chỗ
           </Link>
+
           <button
             onClick={handlePrint}
-            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#EAD8CC] bg-white text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] transition-all shadow-xs cursor-pointer"
           >
-            <Printer size={15} /> In vé / Lưu PDF
+            <Printer size={15} /> In vé điện tử
           </button>
         </div>
 
-        {/* Boarding Pass Ticket Card */}
-        <div className="bg-white rounded-3xl border border-outline-subtle shadow-xl overflow-hidden relative">
+        {/* Ticket Container */}
+        <div className="bg-white rounded-3xl border border-[#EAD8CC] shadow-xl overflow-hidden relative">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-deep-earth to-primary text-white p-7 relative">
+          <div className="bg-gradient-to-r from-[#3D2B1F] to-[#964824] text-white p-7 relative">
             <div className="flex items-center justify-between mb-3">
-              <BrandLogo theme="dark" size="sm" showTagline={false} />
-              <span className="text-[11px] uppercase tracking-widest bg-white/15 px-2.5 py-1 rounded-full text-white/90 font-mono">
-                PASS {booking.bookingCode || `#${booking._id.slice(-6).toUpperCase()}`}
+              <span className="text-xs font-mono tracking-widest uppercase opacity-80">
+                Vé điện tử CraftLocal
+              </span>
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur-md">
+                {BOOKING_STATUS_LABELS[booking.status] || booking.status}
               </span>
             </div>
-            <h1 className="font-headline text-2xl font-bold leading-tight">
-              Vé Điện Tử Trải Nghiệm
-            </h1>
+            <h1 className="font-serif text-2xl font-bold">Thẻ tham gia Workshop</h1>
             <p className="text-white/80 text-xs mt-1">
-              Xuất trình mã QR tại xưởng để xác nhận tham gia
+              Trình mã QR này cho hướng dẫn viên khi đến xưởng để thực hiện check-in.
             </p>
           </div>
 
           {/* Ticket Body */}
           <div className="p-7 space-y-6">
-            <div>
-              <span className="text-xs uppercase font-bold tracking-wider text-primary">Workshop</span>
-              <h2 className="font-headline text-xl font-bold text-deep-earth mt-1 leading-snug">
+            {/* Workshop Info */}
+            <div className="border-b border-[#EAD8CC] pb-5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#964824] bg-[#964824]/10 px-2 py-0.5 rounded-md">
+                Workshop Trải nghiệm
+              </span>
+              <h2 className="font-serif text-xl font-bold text-[#3D2B1F] mt-2 leading-snug">
                 {booking.workshopTitle}
               </h2>
               {booking.workshopLocation && (
-                <div className="flex items-center gap-1 text-xs text-on-surface-variant mt-2">
-                  <MapPin size={14} className="text-primary shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs text-[#7A6255] mt-2">
+                  <MapPin size={14} className="text-[#964824] shrink-0" />
                   <span>{booking.workshopLocation}</span>
                 </div>
               )}
             </div>
 
-            {/* QR Code Container */}
-            <div className="bg-surface-warm p-6 rounded-2xl border border-outline-subtle flex flex-col items-center justify-center text-center">
-              <div className="p-3 bg-white rounded-xl shadow-sm border border-outline-subtle inline-block mb-3">
+            {/* QR Code Presentation */}
+            <div className="bg-[#FAF7F2] p-6 rounded-2xl border border-[#EAD8CC] flex flex-col items-center justify-center text-center">
+              <div className="p-3.5 bg-white rounded-2xl shadow-sm border border-[#EAD8CC] inline-block mb-3">
                 <QRCodeSVG
-                  value={`${window.location.origin}/tour-guide/check-in?token=${encodeURIComponent(booking.qrCode || booking._id)}`}
-                  size={160}
+                  value={booking.qrCode || booking.bookingCode || booking._id}
+                  size={180}
                   level="H"
-                  fgColor="#3D2B1F"
+                  includeMargin={true}
                 />
               </div>
-              <p className="font-mono text-xs font-bold text-deep-earth tracking-widest uppercase">
+              <p className="font-mono text-xs font-bold text-[#3D2B1F] tracking-widest uppercase">
                 {booking.qrCode || booking.bookingCode || booking._id}
               </p>
-              <div className="flex items-center gap-1.5 text-xs text-forest font-semibold mt-2">
-                <ShieldCheck size={14} /> Mã xác thực bảo mật CraftLocal
-              </div>
+              <p className="text-[11px] text-[#7A6255] mt-1 flex items-center gap-1">
+                <ShieldCheck size={14} className="text-emerald-600" /> Mã vé được bảo mật & xác thực tự động
+              </p>
             </div>
 
-            {/* Perforated Divider */}
-            <div className="relative py-2">
-              <div className="border-b-2 border-dashed border-outline-variant" />
-              <div className="absolute -left-10 top-0 w-6 h-6 bg-surface-warm rounded-full" />
-              <div className="absolute -right-10 top-0 w-6 h-6 bg-surface-warm rounded-full" />
-            </div>
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-xl bg-surface-warm/60 border border-outline-subtle">
-                <span className="text-on-surface-variant flex items-center gap-1 mb-1">
-                  <Calendar size={13} className="text-primary" /> Ngày trải nghiệm
+            {/* Schedule Details Grid */}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAD8CC]">
+                <span className="text-[#7A6255] flex items-center gap-1.5 mb-1">
+                  <Calendar size={13} className="text-[#964824]" /> Ngày trải nghiệm
                 </span>
-                <span className="font-bold text-sm text-deep-earth block">
-                  {booking.timeslotDate}
-                </span>
+                <span className="font-bold text-sm text-[#3D2B1F] block">{booking.timeslotDate}</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-surface-warm/60 border border-outline-subtle">
-                <span className="text-on-surface-variant flex items-center gap-1 mb-1">
-                  <Clock size={13} className="text-primary" /> Khung giờ
+              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAD8CC]">
+                <span className="text-[#7A6255] flex items-center gap-1.5 mb-1">
+                  <Clock size={13} className="text-[#964824]" /> Khung giờ
                 </span>
-                <span className="font-bold text-sm text-deep-earth block font-mono">
+                <span className="font-bold text-sm text-[#3D2B1F] block font-mono">
                   {formatTime(booking.timeslotStartTime)} - {formatTime(booking.timeslotEndTime)}
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl bg-surface-warm/60 border border-outline-subtle">
-                <span className="text-on-surface-variant flex items-center gap-1 mb-1">
-                  <Users size={13} className="text-primary" /> Số lượng khách
+              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAD8CC]">
+                <span className="text-[#7A6255] flex items-center gap-1.5 mb-1">
+                  <Users size={13} className="text-[#964824]" /> Số lượng khách
                 </span>
-                <span className="font-bold text-sm text-deep-earth block">
-                  {booking.guests} người
-                </span>
+                <span className="font-bold text-sm text-[#3D2B1F] block">{booking.guests} người</span>
               </div>
 
-              <div className="p-3 rounded-xl bg-surface-warm/60 border border-outline-subtle">
-                <span className="text-on-surface-variant flex items-center gap-1 mb-1">
-                  <Sparkles size={13} className="text-primary" /> Trạng thái
+              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#EAD8CC]">
+                <span className="text-[#7A6255] flex items-center gap-1.5 mb-1">
+                  <Sparkles size={13} className="text-[#964824]" /> Trạng thái
                 </span>
-                <Badge variant={booking.status === 'COMPLETED' || booking.status === 'PAID' ? 'success' : 'heritage'} size="sm">
-                  {BOOKING_STATUS_LABELS[booking.status] || booking.status}
-                </Badge>
+                <span className="font-bold text-sm text-[#964824] block">
+                  {booking.checkInStatus === 'CHECKED_IN' ? 'Đã check-in' : 'Chưa check-in'}
+                </span>
               </div>
             </div>
 
-            {/* Note */}
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/15 text-xs text-on-surface-variant leading-relaxed">
-              <p className="font-bold text-deep-earth mb-1">Lưu ý trước khi đến xưởng:</p>
+            {/* Tourist Note */}
+            <div className="p-4 rounded-xl bg-[#964824]/5 border border-[#964824]/15 text-xs text-[#7A6255] leading-relaxed">
+              <p className="font-bold text-[#3D2B1F] mb-1">Lưu ý trước khi đến xưởng:</p>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Vui lòng có mặt trước giờ bắt đầu khoảng 10-15 phút.</li>
-                <li>Xưởng có sẵn tạp dề và nước uống chào đón.</li>
-                <li>Mọi thắc mắc hỗ trợ gấp vui lòng liên hệ hotline: 1900-LOCAL.</li>
+                <li>Vui lòng có mặt trước giờ bắt đầu khoảng 10-15 phút để làm thủ tục check-in.</li>
+                <li>Xưởng cung cấp đầy đủ tạp dề và nguyên vật liệu thực hành thủ công.</li>
+                <li>Tác phẩm sau khi hoàn thiện sẽ được nghệ nhân hỗ trợ đóng gói để bạn mang về.</li>
               </ul>
             </div>
           </div>
 
-          {/* Ticket Footer Action */}
-          <div className="bg-surface-warm p-6 border-t border-outline-subtle text-center">
+          {/* Ticket Footer */}
+          <div className="bg-[#FAF7F2] p-5 border-t border-[#EAD8CC] text-center">
             <Link to="/my-bookings">
-              <Button variant="outline" fullWidth>
-                Quay lại quản lý lịch đặt
-              </Button>
+              <Button fullWidth>Quay lại lịch đặt chỗ</Button>
             </Link>
           </div>
         </div>
