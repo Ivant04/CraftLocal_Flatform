@@ -119,6 +119,7 @@ const AppRoutes: React.FC = () => (
     <Route element={<RoleRoute allowedRoles={['TOUR_GUIDE']}><TourGuideLayout /></RoleRoute>}>
       <Route path="/tour-guide/dashboard" element={<TourGuideDashboardPage />} />
       <Route path="/tour-guide/schedules" element={<AssignedSchedulePage />} />
+      <Route path="/tour-guide/customers/:id" element={<CustomerListPage />} />
       <Route path="/tour-guide/timeslots/:id/customers" element={<CustomerListPage />} />
       <Route path="/tour-guide/check-in" element={<QRCheckInPage />} />
       <Route path="/tour-guide/trip-progress/:id" element={<TripProgressPage />} />
