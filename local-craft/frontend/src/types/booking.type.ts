@@ -1,4 +1,4 @@
-export type BookingStatus = 'PENDING' | 'PAID' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
+export type BookingStatus = 'PENDING' | 'PAID' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED';
 
 export interface Booking {
   _id: string;
@@ -18,6 +18,7 @@ export interface Booking {
   guests: number;
   totalAmount: number;
   status: BookingStatus;
+  checkInStatus?: 'PENDING' | 'CHECKED_IN';
   qrCode?: string;
   canReview?: boolean;
   checkedInAt?: string;
@@ -26,7 +27,7 @@ export interface Booking {
 }
 
 export interface BookingPayload {
+  workshopId: string;
   timeslotId: string;
-  quantity: number;
-  couponCode?: string;
+  guests: number;
 }

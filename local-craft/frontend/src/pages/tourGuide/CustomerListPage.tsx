@@ -22,6 +22,15 @@ import Button from '../../components/common/Button';
 import Loading from '../../components/common/Loading';
 import EmptyState from '../../components/common/EmptyState';
 
+const isCustomerCheckedIn = (c: Booking): boolean => {
+  return (
+    c.checkInStatus === 'CHECKED_IN' ||
+    c.status === 'CHECKED_IN' ||
+    c.status === 'COMPLETED' ||
+    Boolean(c.checkedInAt)
+  );
+};
+
 const CustomerListPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -67,17 +76,20 @@ const CustomerListPage: React.FC = () => {
   }, [toastMessage]);
 
   const handleCheckIn = async (booking: Booking) => {
-    if (!booking.qrCode) {
+    const token = booking.qrCode || booking.bookingCode || booking._id;
+    if (!token) {
       navigate('/tour-guide/check-in');
       return;
     }
     setCheckingId(booking._id);
     setError('');
     try {
-      await tourGuideApi.checkIn(booking.qrCode);
+      await tourGuideApi.checkIn(token);
       setCustomers((prev) =>
         prev.map((c) =>
-          c._id === booking._id ? { ...c, checkInStatus: 'CHECKED_IN', status: 'CONFIRMED' } : c
+          c._id === booking._id
+            ? { ...c, checkInStatus: 'CHECKED_IN', status: 'CHECKED_IN', checkedInAt: new Date().toISOString() }
+            : c
         )
       );
       setToastMessage({
@@ -99,9 +111,9 @@ const CustomerListPage: React.FC = () => {
     const totalBookings = customers.length;
     const totalGuests = customers.reduce((acc, c) => acc + (c.guests || 1), 0);
     const checkedInGuests = customers
-      .filter((c) => c.checkInStatus === 'CHECKED_IN')
+      .filter((c) => isCustomerCheckedIn(c))
       .reduce((acc, c) => acc + (c.guests || 1), 0);
-    const checkedInBookings = customers.filter((c) => c.checkInStatus === 'CHECKED_IN').length;
+    const checkedInBookings = customers.filter((c) => isCustomerCheckedIn(c)).length;
     const percent = totalGuests > 0 ? Math.round((checkedInGuests / totalGuests) * 100) : 0;
     return { totalBookings, totalGuests, checkedInGuests, checkedInBookings, percent };
   }, [customers]);
@@ -109,7 +121,7 @@ const CustomerListPage: React.FC = () => {
   // Filtered
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) => {
-      const isCheckedIn = c.checkInStatus === 'CHECKED_IN';
+      const isCheckedIn = isCustomerCheckedIn(c);
       const matchStatus =
         filterStatus === 'ALL' ||
         (filterStatus === 'CHECKED_IN' && isCheckedIn) ||
@@ -287,7 +299,7 @@ const CustomerListPage: React.FC = () => {
         ) : (
           <div className="divide-y divide-[#EAD8CC]/60">
             {filteredCustomers.map((c) => {
-              const isCheckedIn = c.checkInStatus === 'CHECKED_IN';
+              const isCheckedIn = isCustomerCheckedIn(c);
               return (
                 <div
                   key={c._id}

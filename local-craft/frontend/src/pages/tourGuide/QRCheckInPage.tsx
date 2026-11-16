@@ -1,66 +1,46 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
-import { CheckCircle, XCircle, AlertTriangle, RefreshCw, QrCode } from "lucide-react";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { QrCode, CheckCircle, XCircle, AlertTriangle, Loader2, ArrowLeft, Calendar, User, Clock } from "lucide-react";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
-import QRScanner from "../../components/qr/QRScanner";
 import tourGuideApi from "../../api/tourGuideApi";
 
 type ScanResult = "idle" | "valid" | "used" | "invalid";
 
-function extractToken(raw: string): string {
-  const trimmed = raw.trim();
-  try {
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-      const url = new URL(trimmed);
-      const token = url.searchParams.get("token");
-      if (token) return token.trim();
-    }
-  } catch {
-    // not a valid URL, continue with fallback
-  }
-
-  // Check if string contains token=...
-  const match = trimmed.match(/[?&]token=([^&]+)/);
-  if (match && match[1]) {
-    return decodeURIComponent(match[1]).trim();
-  }
-
-  return trimmed;
+interface CheckInDetail {
+  touristName?: string;
+  workshopTitle?: string;
+  timeslot?: string;
+  bookingCode?: string;
+  checkedInAt?: string;
+  note?: string;
 }
 
 const QRCheckInPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
   const [manualCode, setManualCode] = useState("");
-  const [result, setResult] = useState<ScanResult>("idle");
-  const [message, setMessage] = useState("");
-  const [checkedData, setCheckedData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [lastScanned, setLastScanned] = useState<string>("");
+  const [result, setResult] = useState<ScanResult>("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [checkInDetail, setCheckInDetail] = useState<CheckInDetail | null>(null);
 
-  const executeCheckIn = useCallback(async (rawToken: string) => {
-    const token = extractToken(rawToken);
-    if (!token) return;
+  const handleCheckIn = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const code = manualCode.trim();
+    if (!code) return;
+
+    setLoading(true);
+    setErrorMessage("");
+    setCheckInDetail(null);
 
     try {
-      setLoading(true);
-      setMessage("");
-      setLastScanned(token);
-      setManualCode(token);
-
-      const res = await tourGuideApi.checkIn(token);
+      const res = await tourGuideApi.checkIn(code);
+      const data = res.data?.data || res.data || {};
+      setCheckInDetail(data);
       setResult("valid");
-      setCheckedData(res.data?.data || null);
-      setMessage(res.data?.message || "Khách đã được check-in thành công.");
     } catch (err: any) {
-      const errMsg = err?.response?.data?.message || "Mã QR không hợp lệ.";
-      setMessage(errMsg);
-      setCheckedData(null);
-      if (
-        errMsg.toLowerCase().includes("sử dụng") ||
-        errMsg.toLowerCase().includes("check-in") ||
-        errMsg.toLowerCase().includes("trước đó")
-      ) {
+      const msg = err?.response?.data?.message || err?.message || "Check-in không thành công.";
+      setErrorMessage(msg);
+      if (msg.toLowerCase().includes("đã được check-in") || msg.toLowerCase().includes("đã sử dụng")) {
         setResult("used");
       } else {
         setResult("invalid");
@@ -68,137 +48,134 @@ const QRCheckInPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  // Handle URL token param (e.g. redirected from phone camera)
-  useEffect(() => {
-    const tokenFromUrl = searchParams.get("token");
-    if (tokenFromUrl) {
-      executeCheckIn(tokenFromUrl);
-    }
-  }, [searchParams, executeCheckIn]);
-
-  const handleScannerScan = (decodedText: string) => {
-    const token = extractToken(decodedText);
-    if (token && token !== lastScanned) {
-      executeCheckIn(token);
-    }
-  };
-
-  const handleReset = () => {
-    setResult("idle");
-    setMessage("");
-    setCheckedData(null);
-    setManualCode("");
-    setLastScanned("");
   };
 
   return (
-    <div className="space-y-6 max-w-xl mx-auto px-4 py-6">
-      <div className="text-center space-y-1">
-        <span className="text-xs font-bold uppercase tracking-wider text-primary inline-flex items-center gap-1.5">
-          <QrCode size={14} /> Điểm danh & Soát vé
-        </span>
-        <h1 className="font-headline text-2xl md:text-3xl font-bold text-deep-earth">
-          Quét QR Check-in Khách Hàng
+    <div className="space-y-6 max-w-lg mx-auto">
+      <div>
+        <Link
+          to="/tour-guide/schedules"
+          className="inline-flex items-center gap-1.5 text-xs text-[#7A6255] hover:text-[#964824] mb-3 transition-colors font-medium"
+        >
+          <ArrowLeft size={14} />
+          <span>Quay lại Lịch phân công</span>
+        </Link>
+        <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#3D2B1F] text-center">
+          Quét mã QR Check-in
         </h1>
-        <p className="text-xs md:text-sm text-on-surface-variant max-w-md mx-auto">
-          Dùng camera quét mã vé điện tử của khách hoặc nhập mã định danh để xác nhận vào xưởng.
+        <p className="text-xs md:text-sm text-[#7A6255] text-center mt-1">
+          Quét vé điện tử hoặc nhập mã vé / mã đặt chỗ của khách tham gia
         </p>
       </div>
 
-      {/* Real Live Camera Scanner */}
-      <QRScanner
-        onScan={handleScannerScan}
-        onError={(err) => console.warn("[QRCheckInPage] Scan notice:", err)}
-      />
+      {/* Camera Scanning Frame */}
+      <div className="bg-[#3D2B1F] rounded-3xl aspect-square max-h-[300px] flex items-center justify-center relative overflow-hidden shadow-inner">
+        <div className="text-center text-white/80 p-6">
+          <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mx-auto mb-3">
+            <QrCode size={36} className="text-[#EAD8CC]" />
+          </div>
+          <p className="text-sm font-semibold text-white">Camera quét mã</p>
+          <p className="text-xs text-white/60 mt-1">Hướng camera máy quét vào mã QR trên vé của khách</p>
+        </div>
+        <div className="absolute inset-6 border-2 border-dashed border-[#964824]/60 rounded-2xl pointer-events-none" />
+      </div>
 
-      {/* Manual Input Code Fallback */}
-      <div className="bg-white rounded-2xl border border-outline-subtle p-5 shadow-xs space-y-3">
-        <label className="block text-xs font-bold uppercase tracking-wider text-on-surface-variant">
-          Hoặc nhập mã vé thủ công:
-        </label>
-        <div className="flex gap-2">
+      {/* Manual Input Form */}
+      <div className="bg-white rounded-2xl border border-[#EAD8CC] p-5 shadow-xs">
+        <p className="text-xs font-semibold text-[#3D2B1F] mb-3">
+          Hoặc nhập mã vé / mã đặt chỗ thủ công:
+        </p>
+        <form onSubmit={handleCheckIn} className="flex gap-2.5">
           <Input
             value={manualCode}
             onChange={(e) => {
               setManualCode(e.target.value);
-              if (result !== "idle") setResult("idle");
+              setResult("idle");
+              setErrorMessage("");
             }}
-            placeholder="Dán URL vé hoặc nhập QR-xxxxxxxx..."
-            className="flex-1 font-mono text-sm"
+            placeholder="Ví dụ: BK-179480... hoặc QR token"
+            className="text-xs font-mono"
+            disabled={loading}
           />
           <Button
-            onClick={() => executeCheckIn(manualCode)}
+            type="submit"
+            onClick={handleCheckIn}
             disabled={loading || !manualCode.trim()}
             className="shrink-0"
           >
-            {loading ? "Đang soát..." : "Check-in"}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : "Check-in"}
           </Button>
-        </div>
+        </form>
       </div>
 
-      {/* Check-in Result Notification Card */}
+      {/* Result Display */}
       {result !== "idle" && (
         <div
-          className={`p-6 rounded-2xl text-center border transition-all animate-fadeIn ${
+          className={`p-5 rounded-2xl border text-center transition-all ${
             result === "valid"
-              ? "bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-sm"
+              ? "bg-emerald-50/80 border-emerald-200"
               : result === "used"
-              ? "bg-amber-50/80 border-amber-300 text-amber-950 shadow-sm"
-              : "bg-red-50/80 border-red-300 text-red-950 shadow-sm"
+              ? "bg-amber-50/80 border-amber-200"
+              : "bg-rose-50/80 border-rose-200"
           }`}
         >
           {result === "valid" && (
-            <>
-              <CheckCircle size={52} className="mx-auto mb-3 text-emerald-600 animate-bounce" />
-              <p className="font-bold text-xl text-emerald-800">Check-in thành công!</p>
-              <p className="text-emerald-700 text-sm mt-1">{message}</p>
-              {checkedData && (
-                <div className="mt-4 p-3 rounded-xl bg-white/80 border border-emerald-200 text-xs text-stone-700 text-left font-mono">
-                  {checkedData.touristName && (
-                    <p><strong>Khách hàng:</strong> {checkedData.touristName}</p>
+            <div className="space-y-3">
+              <CheckCircle size={44} className="mx-auto text-emerald-600" />
+              <div>
+                <p className="font-serif font-bold text-emerald-800 text-lg">Check-in thành công!</p>
+                <p className="text-emerald-700 text-xs mt-0.5">Vé hợp lệ, khách hàng đã được đón vào buổi trải nghiệm.</p>
+              </div>
+
+              {checkInDetail && (
+                <div className="p-3.5 bg-white/80 rounded-xl border border-emerald-200 text-left text-xs space-y-1.5 text-[#3D2B1F]">
+                  {checkInDetail.touristName && (
+                    <div className="flex items-center gap-2">
+                      <User size={13} className="text-[#964824]" />
+                      <span>Khách hàng: <strong>{checkInDetail.touristName}</strong></span>
+                    </div>
                   )}
-                  {checkedData.workshopTitle && (
-                    <p><strong>Workshop:</strong> {checkedData.workshopTitle}</p>
+                  {checkInDetail.workshopTitle && (
+                    <div className="flex items-center gap-2">
+                      <Calendar size={13} className="text-[#964824]" />
+                      <span>Workshop: <strong>{checkInDetail.workshopTitle}</strong></span>
+                    </div>
                   )}
-                  {checkedData.timeslot && (
-                    <p><strong>Khung giờ:</strong> {checkedData.timeslot}</p>
+                  {checkInDetail.timeslot && (
+                    <div className="flex items-center gap-2">
+                      <Clock size={13} className="text-[#964824]" />
+                      <span>Khung giờ: <strong>{checkInDetail.timeslot}</strong></span>
+                    </div>
                   )}
-                  {checkedData.bookingCode && (
-                    <p><strong>Mã đặt chỗ:</strong> {checkedData.bookingCode}</p>
+                  {checkInDetail.note && (
+                    <p className="text-[11px] text-amber-800 italic mt-1 pt-1 border-t border-emerald-100">
+                      {checkInDetail.note}
+                    </p>
                   )}
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {result === "used" && (
-            <>
-              <AlertTriangle size={52} className="mx-auto mb-3 text-amber-600" />
-              <p className="font-bold text-xl text-amber-800">Vé đã được sử dụng!</p>
-              <p className="text-amber-700 text-sm mt-1">{message}</p>
-            </>
+            <div className="space-y-2">
+              <AlertTriangle size={44} className="mx-auto text-amber-600" />
+              <p className="font-serif font-bold text-amber-800 text-lg">Vé đã sử dụng</p>
+              <p className="text-amber-700 text-xs">
+                {errorMessage || "Vé này đã được thực hiện check-in trước đó."}
+              </p>
+            </div>
           )}
 
           {result === "invalid" && (
-            <>
-              <XCircle size={52} className="mx-auto mb-3 text-red-600" />
-              <p className="font-bold text-xl text-red-800">Vé không hợp lệ!</p>
-              <p className="text-red-700 text-sm mt-1">{message}</p>
-            </>
+            <div className="space-y-2">
+              <XCircle size={44} className="mx-auto text-rose-600" />
+              <p className="font-serif font-bold text-rose-800 text-lg">Không thể check-in</p>
+              <p className="text-rose-700 text-xs">
+                {errorMessage || "Mã vé không hợp lệ hoặc không thuộc thẩm quyền của bạn."}
+              </p>
+            </div>
           )}
-
-          <div className="mt-5 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleReset}
-              className="inline-flex items-center gap-1.5 bg-white shadow-2xs"
-            >
-              <RefreshCw size={14} /> Quét vé tiếp theo
-            </Button>
-          </div>
         </div>
       )}
     </div>
