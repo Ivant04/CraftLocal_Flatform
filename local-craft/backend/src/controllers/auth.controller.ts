@@ -26,10 +26,23 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const updateProfile = asyncHandler(async (req: Request, res: Response) => {
-  const { fullName, phone, avatar } = req.body;
+  const { fullName, phone, avatar, dateOfBirth, gender, address } = req.body;
+  const updateData: any = {};
+  if (fullName !== undefined) updateData.fullName = fullName;
+  if (phone !== undefined) updateData.phone = phone;
+  if (avatar !== undefined) updateData.avatar = avatar;
+  if (dateOfBirth !== undefined) {
+    updateData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+  }
+  if (gender !== undefined) updateData.gender = gender;
+  if (address !== undefined) {
+    updateData.address = address;
+    updateData['defaultAddress.fullAddress'] = address;
+  }
+
   const user = await User.findByIdAndUpdate(
     req.user!._id,
-    { fullName, phone, avatar },
+    updateData,
     { new: true, runValidators: true }
   );
   sendSuccess(res, 'Cập nhật thông tin thành công', user);

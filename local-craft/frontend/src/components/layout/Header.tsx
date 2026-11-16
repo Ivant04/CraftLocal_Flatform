@@ -127,6 +127,15 @@ const Header: React.FC = () => {
                       </div>
 
                       <Link
+                        to="/profile"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
+                      >
+                        <User size={16} className="text-[#964824]" />
+                        <span>Hồ sơ cá nhân</span>
+                      </Link>
+
+                      <Link
                         to={getRoleRedirectPath(user.role)}
                         onClick={() => setProfileOpen(false)}
                         className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
@@ -256,7 +265,35 @@ const Header: React.FC = () => {
             </button>
 
             {isAuthenticated && user ? (
-              <div className="pt-2 border-t border-[#EAD8CC]">
+              <div className="pt-2 border-t border-[#EAD8CC] space-y-1">
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+                >
+                  <User size={16} className="text-[#964824]" />
+                  <span>Hồ sơ cá nhân</span>
+                </Link>
+                {user.role === 'TOURIST' && (
+                  <>
+                    <Link
+                      to="/my-bookings"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+                    >
+                      <Calendar size={16} className="text-[#7A6255]" />
+                      <span>Vé & Lịch đặt chỗ</span>
+                    </Link>
+                    <Link
+                      to="/my-orders"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+                    >
+                      <Package size={16} className="text-[#7A6255]" />
+                      <span>Đơn hàng của tôi</span>
+                    </Link>
+                  </>
+                )}
                 <Link
                   to={getRoleRedirectPath(user.role)}
                   onClick={() => setMobileOpen(false)}
