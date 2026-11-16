@@ -33,6 +33,7 @@ export interface IUser extends Document {
     ownerPhone?: string;
     businessAddress?: IAddress;
     description?: string;
+    workshopImages?: string[];
     identityCardFront?: string;
     identityCardBack?: string;
     certificate?: string;
@@ -81,6 +82,7 @@ const userSchema = new Schema<IUser>(
       ownerPhone: String,
       businessAddress: addressSchema,
       description: String,
+      workshopImages: [{ type: String }],
       identityCardFront: String,
       identityCardBack: String,
       certificate: String,

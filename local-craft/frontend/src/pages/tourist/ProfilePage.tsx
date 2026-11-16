@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   User as UserIcon,
   Mail,
@@ -17,11 +17,14 @@ import {
   Sparkles,
   Loader2,
   Trash2,
+  Store,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import authApi from '../../api/authApi';
 import Button from '../../components/common/Button';
 import Loading from '../../components/common/Loading';
+import WorkshopOwnerRegistrationTab from '../../components/profile/WorkshopOwnerRegistrationTab';
 
 interface ProfileFormState {
   fullName: string;
@@ -47,10 +50,20 @@ const ROLE_LABELS: Record<string, string> = {
   TOURIST: 'Du khách trải nghiệm',
 };
 
-const ProfilePage: React.FC = () => {
+interface ProfilePageProps {
+  initialTab?: 'profile' | 'host';
+}
+
+const ProfilePage: React.FC<ProfilePageProps> = ({ initialTab }) => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const tabQuery = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState<'profile' | 'host'>(
+    initialTab === 'host' || tabQuery === 'host' ? 'host' : 'profile'
+  );
 
   const [initialData, setInitialData] = useState<ProfileFormState>({
     fullName: '',
@@ -79,6 +92,12 @@ const ProfilePage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Sync tab with URL query parameter
+  const handleTabChange = (tab: 'profile' | 'host') => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'host' ? { tab: 'host' } : {});
+  };
+
   // Fetch full user profile from backend on mount
   useEffect(() => {
     let isMounted = true;
@@ -90,7 +109,6 @@ const ProfilePage: React.FC = () => {
         const userData = (res.data as any)?.data || res.data;
 
         if (userData && isMounted) {
-          // Format dateOfBirth to YYYY-MM-DD for date input
           let dobString = '';
           if (userData.dateOfBirth) {
             const dob = new Date(userData.dateOfBirth);
@@ -117,11 +135,9 @@ const ProfilePage: React.FC = () => {
 
           setInitialData(state);
           setFormData(state);
-          // Sync with local context if needed
           updateUser(userData);
         }
       } catch (err: any) {
-        // Fallback to context user if API fails
         if (user && isMounted) {
           const state: ProfileFormState = {
             fullName: user.fullName || '',
@@ -152,7 +168,6 @@ const ProfilePage: React.FC = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear field-specific error on change
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -165,13 +180,11 @@ const ProfilePage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       setErrorMessage('Vui lòng chọn file hình ảnh hợp lệ (JPG, PNG, WEBP).');
       return;
     }
 
-    // Validate size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setErrorMessage('Kích thước ảnh tối đa cho phép là 5MB.');
       return;
@@ -196,7 +209,6 @@ const ProfilePage: React.FC = () => {
       );
     } finally {
       setUploadingAvatar(false);
-      // Reset input value to allow selecting same file again
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -211,14 +223,12 @@ const ProfilePage: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    // 1. Full name
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Họ và tên không được để trống.';
     } else if (formData.fullName.trim().length < 2) {
       newErrors.fullName = 'Họ và tên phải có ít nhất 2 ký tự.';
     }
 
-    // 2. Phone (Vietnamese phone regex)
     if (formData.phone.trim()) {
       const phoneClean = formData.phone.trim().replace(/\s+/g, '');
       const phoneRegex = /(84|0[3|5|7|8|9])+([0-9]{8})\b/;
@@ -227,7 +237,6 @@ const ProfilePage: React.FC = () => {
       }
     }
 
-    // 3. Date of birth
     if (formData.dateOfBirth) {
       const selectedDate = new Date(formData.dateOfBirth);
       const today = new Date();
@@ -268,7 +277,6 @@ const ProfilePage: React.FC = () => {
       const res = await authApi.updateProfile(payload);
       const updatedUser = (res.data as any)?.data || res.data;
 
-      // Update global context & local storage
       if (updatedUser) {
         updateUser(updatedUser);
       } else {
@@ -284,8 +292,6 @@ const ProfilePage: React.FC = () => {
 
       setInitialData({ ...formData });
       setSuccessMessage('Cập nhật thông tin cá nhân thành công!');
-
-      // Scroll to top smoothly
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
       setErrorMessage(
@@ -296,7 +302,7 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Cancel Handler - Revert to initial data
+  // Cancel Handler
   const handleCancel = () => {
     setFormData({ ...initialData });
     setErrors({});
@@ -333,17 +339,19 @@ const ProfilePage: React.FC = () => {
         </div>
 
         {/* Page Title & Intro */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-2">
               <Sparkles size={13} />
-              <span>Tài khoản cá nhân</span>
+              <span>Tài khoản người dùng</span>
             </div>
             <h1 className="font-headline text-2xl sm:text-3xl lg:text-4xl font-bold text-deep-earth">
-              Chỉnh sửa thông tin cá nhân
+              {activeTab === 'profile' ? 'Chỉnh sửa thông tin cá nhân' : 'Đăng ký trở thành Chủ xưởng'}
             </h1>
             <p className="text-xs sm:text-sm text-on-surface-variant mt-1.5">
-              Cập nhật thông tin liên hệ và hình ảnh đại diện để trải nghiệm CraftLocal trọn vẹn hơn
+              {activeTab === 'profile'
+                ? 'Cập nhật thông tin liên hệ và hình ảnh đại diện để trải nghiệm CraftLocal trọn vẹn hơn'
+                : 'Đăng ký thông tin xưởng sản xuất để trở thành đối tác nghệ nhân cùng CraftLocal'}
             </p>
           </div>
 
@@ -362,380 +370,446 @@ const ProfilePage: React.FC = () => {
           )}
         </div>
 
-        {/* Success Alert Banner */}
-        {successMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start gap-3 animate-fadeIn shadow-xs">
-            <CheckCircle2 size={20} className="shrink-0 text-emerald-600 mt-0.5" />
-            <div className="flex-1 text-sm font-medium">{successMessage}</div>
-            <button
-              onClick={() => setSuccessMessage('')}
-              className="text-emerald-600 hover:text-emerald-900 text-xs font-bold"
-            >
-              Đóng
-            </button>
-          </div>
-        )}
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-2 sm:gap-3 mb-8 border-b border-soft-clay pb-2 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => handleTabChange('profile')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer select-none shrink-0 ${
+              activeTab === 'profile'
+                ? 'bg-[#964824] text-white shadow-sm'
+                : 'bg-white text-on-surface-variant hover:text-deep-earth hover:bg-[#FAF7F2] border border-soft-clay'
+            }`}
+          >
+            <UserIcon size={16} />
+            <span>Thông tin cá nhân</span>
+          </button>
 
-        {/* Error Alert Banner */}
-        {errorMessage && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-3 animate-fadeIn shadow-xs">
-            <AlertCircle size={20} className="shrink-0 text-rose-600 mt-0.5" />
-            <div className="flex-1 text-sm font-medium">{errorMessage}</div>
-            <button
-              onClick={() => setErrorMessage('')}
-              className="text-rose-600 hover:text-rose-900 text-xs font-bold"
-            >
-              Đóng
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => handleTabChange('host')}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all cursor-pointer select-none shrink-0 ${
+              activeTab === 'host'
+                ? 'bg-[#964824] text-white shadow-sm'
+                : 'bg-white text-on-surface-variant hover:text-deep-earth hover:bg-[#FAF7F2] border border-soft-clay'
+            }`}
+          >
+            <Store size={16} />
+            <span>Đăng ký Chủ xưởng</span>
+            {user?.role === 'HOST' ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                Chủ xưởng
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800">
+                Đối tác
+              </span>
+            )}
+          </button>
+        </div>
 
-        {/* Main Profile Form */}
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Left Column: Avatar & Account Summary */}
-            <div className="md:col-span-1 space-y-6">
-              {/* Avatar Card */}
-              <div className="bg-white rounded-2xl border border-soft-clay p-6 shadow-sm text-center">
-                <h3 className="text-sm font-bold text-deep-earth uppercase tracking-wider mb-4">
-                  Ảnh đại diện
-                </h3>
-
-                <div className="relative w-32 h-32 mx-auto mb-4 group">
-                  <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#FAF7F2] to-[#EAD8CC] border-4 border-white shadow-md flex items-center justify-center">
-                    {formData.avatar ? (
-                      <img
-                        src={formData.avatar}
-                        alt={formData.fullName || 'User avatar'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-4xl font-extrabold text-primary select-none">
-                        {formData.fullName?.charAt(0)?.toUpperCase() || 'U'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Upload overlay spinner */}
-                  {uploadingAvatar && (
-                    <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center text-white text-xs font-medium backdrop-blur-xs">
-                      <Loader2 size={24} className="animate-spin mb-1 text-accent" />
-                      <span>Đang tải...</span>
-                    </div>
-                  )}
-
-                  {/* Camera overlay button */}
-                  {!uploadingAvatar && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-primary hover:bg-[#7A3518] text-white flex items-center justify-center shadow-md transition-all cursor-pointer hover:scale-105"
-                      title="Chọn ảnh mới"
-                    >
-                      <Camera size={16} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png, image/jpeg, image/jpg, image/webp"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-
-                <div className="flex flex-col gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    disabled={uploadingAvatar}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Camera size={14} className="mr-1.5" /> Thay đổi ảnh
-                  </Button>
-
-                  {formData.avatar && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveAvatar}
-                      className="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center justify-center gap-1 py-1 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={13} /> Gỡ ảnh đại diện
-                    </button>
-                  )}
-                </div>
-
-                <p className="text-[11px] text-on-surface-variant mt-3 leading-relaxed">
-                  Định dạng hỗ trợ: JPG, PNG, WEBP.
-                  <br />
-                  Kích thước tối đa 5MB.
-                </p>
+        {/* TAB 2: ĐĂNG KÝ CHỦ XƯỞNG */}
+        {activeTab === 'host' ? (
+          <WorkshopOwnerRegistrationTab user={user} />
+        ) : (
+          /* TAB 1: CHỈNH SỬA THÔNG TIN CÁ NHÂN */
+          <>
+            {/* Success Alert Banner */}
+            {successMessage && (
+              <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start gap-3 animate-fadeIn shadow-xs">
+                <CheckCircle2 size={20} className="shrink-0 text-emerald-600 mt-0.5" />
+                <div className="flex-1 text-sm font-medium">{successMessage}</div>
+                <button
+                  onClick={() => setSuccessMessage('')}
+                  className="text-emerald-600 hover:text-emerald-900 text-xs font-bold"
+                >
+                  Đóng
+                </button>
               </div>
+            )}
 
-              {/* Account Quick Info Card */}
-              <div className="bg-white rounded-2xl border border-soft-clay p-5 shadow-sm space-y-3 text-xs">
-                <div className="flex justify-between items-center pb-2 border-b border-soft-clay/60">
-                  <span className="text-on-surface-variant">Trạng thái</span>
-                  <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Hoạt động
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-soft-clay/60">
-                  <span className="text-on-surface-variant">Vai trò</span>
-                  <span className="font-semibold text-deep-earth">
-                    {ROLE_LABELS[user?.role || 'TOURIST'] || user?.role}
-                  </span>
-                </div>
-                {user?.createdAt && (
-                  <div className="flex justify-between items-center pt-0.5">
-                    <span className="text-on-surface-variant">Tham gia từ</span>
-                    <span className="font-medium text-deep-earth">
-                      {new Date(user.createdAt).toLocaleDateString('vi-VN')}
-                    </span>
-                  </div>
-                )}
+            {/* Error Alert Banner */}
+            {errorMessage && (
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-3 animate-fadeIn shadow-xs">
+                <AlertCircle size={20} className="shrink-0 text-rose-600 mt-0.5" />
+                <div className="flex-1 text-sm font-medium">{errorMessage}</div>
+                <button
+                  onClick={() => setErrorMessage('')}
+                  className="text-rose-600 hover:text-rose-900 text-xs font-bold"
+                >
+                  Đóng
+                </button>
               </div>
-            </div>
+            )}
 
-            {/* Right Column: Detailed Edit Information */}
-            <div className="md:col-span-2">
-              <div className="bg-white rounded-2xl border border-soft-clay p-6 sm:p-8 shadow-sm space-y-6">
-                <div className="border-b border-soft-clay pb-4">
-                  <h3 className="text-base font-bold text-deep-earth">
-                    Thông tin tài khoản & Liên hệ
-                  </h3>
-                  <p className="text-xs text-on-surface-variant mt-0.5">
-                    Các thông tin này dùng để xác nhận đơn hàng, gửi vé điện tử và hỗ trợ bạn khi tham gia workshop.
-                  </p>
-                </div>
+            {/* Main Profile Form */}
+            <form onSubmit={handleSubmit} noValidate>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Left Column: Avatar & Account Summary */}
+                <div className="md:col-span-1 space-y-6">
+                  {/* Avatar Card */}
+                  <div className="bg-white rounded-2xl border border-soft-clay p-6 shadow-sm text-center">
+                    <h3 className="text-sm font-bold text-deep-earth uppercase tracking-wider mb-4">
+                      Ảnh đại diện
+                    </h3>
 
-                {/* Form Fields Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {/* Họ và tên */}
-                  <div className="sm:col-span-2">
-                    <label
-                      htmlFor="fullName"
-                      className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
-                    >
-                      Họ và tên <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
-                        <UserIcon size={16} />
-                      </div>
-                      <input
-                        id="fullName"
-                        name="fullName"
-                        type="text"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        placeholder="Nhập đầy đủ họ và tên của bạn"
-                        className={`w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border rounded-xl text-sm font-medium text-deep-earth placeholder:text-on-surface-variant/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
-                          errors.fullName ? 'border-rose-500 bg-rose-50/20' : 'border-soft-clay'
-                        }`}
-                      />
-                    </div>
-                    {errors.fullName && (
-                      <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
-                        <AlertCircle size={13} /> {errors.fullName}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Email (Disabled / Read-only) */}
-                  <div className="sm:col-span-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <label
-                        htmlFor="email"
-                        className="block text-xs font-bold text-deep-earth uppercase tracking-wider"
-                      >
-                        Địa chỉ Email
-                      </label>
-                      <span className="text-[11px] text-on-surface-variant/80 font-medium flex items-center gap-1 bg-soft-clay/40 px-2 py-0.5 rounded-md">
-                        <Lock size={11} /> Không thể thay đổi
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant/70">
-                        <Mail size={16} />
-                      </div>
-                      <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        disabled
-                        readOnly
-                        className="w-full pl-10 pr-10 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-500 cursor-not-allowed select-none"
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-neutral-400">
-                        <Lock size={15} />
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-on-surface-variant mt-1.5">
-                      Email được sử dụng làm tên đăng nhập và nhận thông báo xác nhận giao dịch.
-                    </p>
-                  </div>
-
-                  {/* Số điện thoại */}
-                  <div>
-                    <label
-                      htmlFor="phone"
-                      className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
-                    >
-                      Số điện thoại
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
-                        <Phone size={16} />
-                      </div>
-                      <input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder="Ví dụ: 0912345678"
-                        className={`w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border rounded-xl text-sm font-medium text-deep-earth placeholder:text-on-surface-variant/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
-                          errors.phone ? 'border-rose-500 bg-rose-50/20' : 'border-soft-clay'
-                        }`}
-                      />
-                    </div>
-                    {errors.phone && (
-                      <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
-                        <AlertCircle size={13} /> {errors.phone}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Ngày sinh */}
-                  <div>
-                    <label
-                      htmlFor="dateOfBirth"
-                      className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
-                    >
-                      Ngày sinh
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
-                        <Calendar size={16} />
-                      </div>
-                      <input
-                        id="dateOfBirth"
-                        name="dateOfBirth"
-                        type="date"
-                        max={new Date().toISOString().split('T')[0]}
-                        value={formData.dateOfBirth}
-                        onChange={handleChange}
-                        className={`w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border rounded-xl text-sm font-medium text-deep-earth focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
-                          errors.dateOfBirth ? 'border-rose-500 bg-rose-50/20' : 'border-soft-clay'
-                        }`}
-                      />
-                    </div>
-                    {errors.dateOfBirth && (
-                      <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
-                        <AlertCircle size={13} /> {errors.dateOfBirth}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Giới tính */}
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2">
-                      Giới tính
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { id: 'MALE', label: 'Nam' },
-                        { id: 'FEMALE', label: 'Nữ' },
-                        { id: 'OTHER', label: 'Khác' },
-                      ].map((item) => (
-                        <label
-                          key={item.id}
-                          className={`flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer font-semibold text-xs md:text-sm transition-all select-none ${
-                            formData.gender === item.id
-                              ? 'border-primary bg-primary/10 text-primary shadow-xs'
-                              : 'border-soft-clay bg-[#FAF7F2] text-on-surface-variant hover:bg-white hover:border-outline-variant'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="gender"
-                            value={item.id}
-                            checked={formData.gender === item.id}
-                            onChange={() =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                gender: item.id as 'MALE' | 'FEMALE' | 'OTHER',
-                              }))
-                            }
-                            className="sr-only"
+                    <div className="relative w-32 h-32 mx-auto mb-4 group">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-[#FAF7F2] to-[#EAD8CC] border-4 border-white shadow-md flex items-center justify-center">
+                        {formData.avatar ? (
+                          <img
+                            src={formData.avatar}
+                            alt={formData.fullName || 'User avatar'}
+                            className="w-full h-full object-cover"
                           />
-                          <span>{item.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Địa chỉ */}
-                  <div className="sm:col-span-2">
-                    <label
-                      htmlFor="address"
-                      className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
-                    >
-                      Địa chỉ liên hệ
-                    </label>
-                    <div className="relative">
-                      <div className="absolute top-3 left-0 pl-3.5 flex items-start pointer-events-none text-on-surface-variant">
-                        <MapPin size={16} />
+                        ) : (
+                          <span className="text-4xl font-extrabold text-primary select-none">
+                            {formData.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
+                        )}
                       </div>
-                      <textarea
-                        id="address"
-                        name="address"
-                        rows={3}
-                        value={formData.address}
-                        onChange={handleChange}
-                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border border-soft-clay rounded-xl text-sm font-medium text-deep-earth placeholder:text-on-surface-variant/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-y min-h-[80px]"
-                      />
+
+                      {uploadingAvatar && (
+                        <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center text-white text-xs font-medium backdrop-blur-xs">
+                          <Loader2 size={24} className="animate-spin mb-1 text-accent" />
+                          <span>Đang tải...</span>
+                        </div>
+                      )}
+
+                      {!uploadingAvatar && (
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute bottom-1 right-1 w-9 h-9 rounded-full bg-primary hover:bg-[#7A3518] text-white flex items-center justify-center shadow-md transition-all cursor-pointer hover:scale-105"
+                          title="Chọn ảnh mới"
+                        >
+                          <Camera size={16} />
+                        </button>
+                      )}
                     </div>
-                    <p className="text-[11px] text-on-surface-variant mt-1.5">
-                      Địa chỉ nhận hàng mặc định khi đặt mua sản phẩm thủ công từ làng nghề.
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      onChange={handleAvatarChange}
+                      className="hidden"
+                    />
+
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={uploadingAvatar}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Camera size={14} className="mr-1.5" /> Thay đổi ảnh
+                      </Button>
+
+                      {formData.avatar && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveAvatar}
+                          className="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center justify-center gap-1 py-1 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={13} /> Gỡ ảnh đại diện
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="text-[11px] text-on-surface-variant mt-3 leading-relaxed">
+                      Định dạng hỗ trợ: JPG, PNG, WEBP.
+                      <br />
+                      Kích thước tối đa 5MB.
                     </p>
                   </div>
+
+                  {/* Become Host Banner (for Tourist) */}
+                  {user?.role === 'TOURIST' && (
+                    <div
+                      onClick={() => handleTabChange('host')}
+                      className="bg-gradient-to-br from-[#964824] to-[#7A3518] rounded-2xl p-5 text-white shadow-sm cursor-pointer hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <Store size={18} className="text-[#E9C176]" />
+                        <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#E9C176]">
+                          Cơ hội đối tác
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-sm">Đăng ký trở thành Chủ xưởng</h4>
+                      <p className="text-[11px] text-white/85 mt-1 leading-relaxed">
+                        Mở rộng kinh doanh workshop và sản phẩm thủ công truyền thống của bạn cùng CraftLocal.
+                      </p>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#E9C176] mt-3 group-hover:translate-x-1 transition-transform">
+                        <span>Đăng ký ngay</span>
+                        <ArrowRight size={14} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Account Quick Info Card */}
+                  <div className="bg-white rounded-2xl border border-soft-clay p-5 shadow-sm space-y-3 text-xs">
+                    <div className="flex justify-between items-center pb-2 border-b border-soft-clay/60">
+                      <span className="text-on-surface-variant">Trạng thái</span>
+                      <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        Hoạt động
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-soft-clay/60">
+                      <span className="text-on-surface-variant">Vai trò</span>
+                      <span className="font-semibold text-deep-earth">
+                        {ROLE_LABELS[user?.role || 'TOURIST'] || user?.role}
+                      </span>
+                    </div>
+                    {user?.createdAt && (
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span className="text-on-surface-variant">Tham gia từ</span>
+                        <span className="font-medium text-deep-earth">
+                          {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Form Action Buttons */}
-                <div className="pt-6 border-t border-soft-clay flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="md"
-                    className="w-full sm:w-auto"
-                    onClick={handleCancel}
-                    disabled={submitting || !hasChanges}
-                  >
-                    <RotateCcw size={15} className="mr-1.5" /> Hủy thay đổi
-                  </Button>
+                {/* Right Column: Detailed Edit Information */}
+                <div className="md:col-span-2">
+                  <div className="bg-white rounded-2xl border border-soft-clay p-6 sm:p-8 shadow-sm space-y-6">
+                    <div className="border-b border-soft-clay pb-4">
+                      <h3 className="text-base font-bold text-deep-earth">
+                        Thông tin tài khoản & Liên hệ
+                      </h3>
+                      <p className="text-xs text-on-surface-variant mt-0.5">
+                        Các thông tin này dùng để xác nhận đơn hàng, gửi vé điện tử và hỗ trợ bạn khi tham gia workshop.
+                      </p>
+                    </div>
 
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    className="w-full sm:w-auto shadow-md"
-                    isLoading={submitting}
-                  >
-                    <Save size={16} className="mr-1.5" /> Lưu thay đổi
-                  </Button>
+                    {/* Form Fields Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      {/* Họ và tên */}
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="fullName"
+                          className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
+                        >
+                          Họ và tên <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                            <UserIcon size={16} />
+                          </div>
+                          <input
+                            id="fullName"
+                            name="fullName"
+                            type="text"
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            placeholder="Nhập đầy đủ họ và tên của bạn"
+                            className={`w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border rounded-xl text-sm font-medium text-deep-earth placeholder:text-on-surface-variant/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
+                              errors.fullName ? 'border-rose-500 bg-rose-50/20' : 'border-soft-clay'
+                            }`}
+                          />
+                        </div>
+                        {errors.fullName && (
+                          <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
+                            <AlertCircle size={13} /> {errors.fullName}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Email (Disabled / Read-only) */}
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <label
+                            htmlFor="email"
+                            className="block text-xs font-bold text-deep-earth uppercase tracking-wider"
+                          >
+                            Địa chỉ Email
+                          </label>
+                          <span className="text-[11px] text-on-surface-variant/80 font-medium flex items-center gap-1 bg-soft-clay/40 px-2 py-0.5 rounded-md">
+                            <Lock size={11} /> Không thể thay đổi
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant/70">
+                            <Mail size={16} />
+                          </div>
+                          <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            disabled
+                            readOnly
+                            className="w-full pl-10 pr-10 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-500 cursor-not-allowed select-none"
+                          />
+                          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-neutral-400">
+                            <Lock size={15} />
+                          </div>
+                        </div>
+                        <p className="text-[11px] text-on-surface-variant mt-1.5">
+                          Email được sử dụng làm tên đăng nhập và nhận thông báo xác nhận giao dịch.
+                        </p>
+                      </div>
+
+                      {/* Số điện thoại */}
+                      <div>
+                        <label
+                          htmlFor="phone"
+                          className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
+                        >
+                          Số điện thoại
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                            <Phone size={16} />
+                          </div>
+                          <input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="Ví dụ: 0912345678"
+                            className={`w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border rounded-xl text-sm font-medium text-deep-earth placeholder:text-on-surface-variant/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
+                              errors.phone ? 'border-rose-500 bg-rose-50/20' : 'border-soft-clay'
+                            }`}
+                          />
+                        </div>
+                        {errors.phone && (
+                          <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
+                            <AlertCircle size={13} /> {errors.phone}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Ngày sinh */}
+                      <div>
+                        <label
+                          htmlFor="dateOfBirth"
+                          className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
+                        >
+                          Ngày sinh
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                            <Calendar size={16} />
+                          </div>
+                          <input
+                            id="dateOfBirth"
+                            name="dateOfBirth"
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            value={formData.dateOfBirth}
+                            onChange={handleChange}
+                            className={`w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border rounded-xl text-sm font-medium text-deep-earth focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${
+                              errors.dateOfBirth ? 'border-rose-500 bg-rose-50/20' : 'border-soft-clay'
+                            }`}
+                          />
+                        </div>
+                        {errors.dateOfBirth && (
+                          <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
+                            <AlertCircle size={13} /> {errors.dateOfBirth}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Giới tính */}
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2">
+                          Giới tính
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {[
+                            { id: 'MALE', label: 'Nam' },
+                            { id: 'FEMALE', label: 'Nữ' },
+                            { id: 'OTHER', label: 'Khác' },
+                          ].map((item) => (
+                            <label
+                              key={item.id}
+                              className={`flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer font-semibold text-xs md:text-sm transition-all select-none ${
+                                formData.gender === item.id
+                                  ? 'border-primary bg-primary/10 text-primary shadow-xs'
+                                  : 'border-soft-clay bg-[#FAF7F2] text-on-surface-variant hover:bg-white hover:border-outline-variant'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="gender"
+                                value={item.id}
+                                checked={formData.gender === item.id}
+                                onChange={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    gender: item.id as 'MALE' | 'FEMALE' | 'OTHER',
+                                  }))
+                                }
+                                className="sr-only"
+                              />
+                              <span>{item.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Địa chỉ */}
+                      <div className="sm:col-span-2">
+                        <label
+                          htmlFor="address"
+                          className="block text-xs font-bold text-deep-earth uppercase tracking-wider mb-2"
+                        >
+                          Địa chỉ liên hệ
+                        </label>
+                        <div className="relative">
+                          <div className="absolute top-3 left-0 pl-3.5 flex items-start pointer-events-none text-on-surface-variant">
+                            <MapPin size={16} />
+                          </div>
+                          <textarea
+                            id="address"
+                            name="address"
+                            rows={3}
+                            value={formData.address}
+                            onChange={handleChange}
+                            placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-[#FAF7F2] border border-soft-clay rounded-xl text-sm font-medium text-deep-earth placeholder:text-on-surface-variant/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-y min-h-[80px]"
+                          />
+                        </div>
+                        <p className="text-[11px] text-on-surface-variant mt-1.5">
+                          Địa chỉ nhận hàng mặc định khi đặt mua sản phẩm thủ công từ làng nghề.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Form Action Buttons */}
+                    <div className="pt-6 border-t border-soft-clay flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="md"
+                        className="w-full sm:w-auto"
+                        onClick={handleCancel}
+                        disabled={submitting || !hasChanges}
+                      >
+                        <RotateCcw size={15} className="mr-1.5" /> Hủy thay đổi
+                      </Button>
+
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        className="w-full sm:w-auto shadow-md"
+                        isLoading={submitting}
+                      >
+                        <Save size={16} className="mr-1.5" /> Lưu thay đổi
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </form>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

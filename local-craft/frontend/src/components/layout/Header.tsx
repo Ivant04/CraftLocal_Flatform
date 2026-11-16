@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Calendar, Package, Sparkles, MapPin } from 'lucide-react';
+import { Menu, X, ShoppingCart, User, LogOut, ChevronDown, Calendar, Package, Sparkles, MapPin, Store } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
 import { useNearbyModal } from '../../context/NearbyModalContext';
@@ -147,6 +147,14 @@ const Header: React.FC = () => {
                       {user.role === 'TOURIST' && (
                         <>
                           <Link
+                            to="/become-host"
+                            onClick={() => setProfileOpen(false)}
+                            className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
+                          >
+                            <Store size={16} className="text-[#964824]" />
+                            <span>Đăng ký làm Chủ xưởng</span>
+                          </Link>
+                          <Link
                             to="/my-bookings"
                             onClick={() => setProfileOpen(false)}
                             className="flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl transition-colors"
@@ -276,6 +284,14 @@ const Header: React.FC = () => {
                 </Link>
                 {user.role === 'TOURIST' && (
                   <>
+                    <Link
+                      to="/become-host"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#3D2B1F] hover:bg-[#FAF7F2] hover:text-[#964824] rounded-xl"
+                    >
+                      <Store size={16} className="text-[#964824]" />
+                      <span>Đăng ký làm Chủ xưởng</span>
+                    </Link>
                     <Link
                       to="/my-bookings"
                       onClick={() => setMobileOpen(false)}

@@ -6,7 +6,7 @@ import Sidebar from '../../components/layout/Sidebar';
 const adminLinks = [
   { to: '/admin/dashboard', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
   { to: '/admin/users', label: 'Quản lý người dùng', icon: <Users size={18} /> },
-  { to: '/admin/approve-hosts', label: 'Duyệt Chủ xưởng', icon: <UserCheck size={18} /> },
+  { to: '/admin/approve-hosts', label: 'Quản lý đăng ký Chủ xưởng', icon: <UserCheck size={18} /> },
   { to: '/admin/revenue', label: 'Doanh thu', icon: <TrendingUp size={18} /> },
 ];
 
@@ -14,7 +14,7 @@ const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-craft-contour flex">
+    <div className="min-h-screen bg-surface flex">
       <Sidebar links={adminLinks} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} title="Quản trị" />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 border-b border-soft-clay bg-white flex items-center px-4 lg:px-8 gap-4">
