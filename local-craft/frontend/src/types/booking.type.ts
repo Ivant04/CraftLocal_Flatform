@@ -2,9 +2,11 @@ export type BookingStatus = 'PENDING' | 'PAID' | 'CHECKED_IN' | 'COMPLETED' | 'C
 
 export interface Booking {
   _id: string;
+  bookingCode?: string;
   workshopId: string;
   workshopTitle: string;
   workshopImage?: string;
+  workshopLocation?: string;
   timeslotId: string;
   timeslotDate: string;
   timeslotStartTime: string;
@@ -12,10 +14,13 @@ export interface Booking {
   touristId: string;
   touristName: string;
   touristEmail?: string;
+  touristPhone?: string;
   guests: number;
   totalAmount: number;
   status: BookingStatus;
+  checkInStatus?: 'PENDING' | 'CHECKED_IN';
   qrCode?: string;
+  canReview?: boolean;
   checkedInAt?: string;
   createdAt: string;
   updatedAt: string;
