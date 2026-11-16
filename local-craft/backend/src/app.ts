@@ -21,6 +21,7 @@ import reviewRoutes from './routes/review.routes';
 import tourGuideRoutes from './routes/tourGuide.routes';
 import categoryRoutes from './routes/category.routes';
 import uploadRoutes from './routes/upload.routes';
+import applicationRoutes from './routes/application.routes';
 import recommendationRoutes from './routes/recommendation.routes';
 import audioGuideRoutes from './routes/audioGuide.routes';
 
@@ -112,6 +113,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/tour-guide', tourGuideRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/applications', applicationRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 app.use('/api/audio-guide', audioGuideRoutes);
 

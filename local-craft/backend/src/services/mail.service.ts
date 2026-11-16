@@ -638,4 +638,111 @@ export class MailService {
       html,
     });
   }
+
+  // =========================================================================
+  // 6. THÔNG BÁO XÉT DUYỆT HỒ SƠ CHỦ XƯỞNG (DUYỆT & TỪ CHỐI)
+  // =========================================================================
+
+  /**
+   * Gửi email thông báo hồ sơ đăng ký Chủ xưởng đã được phê duyệt thành công
+   */
+  static async sendHostApplicationApprovedEmail(params: {
+    hostEmail: string;
+    hostName: string;
+    workshopName: string;
+    approvedAt?: string;
+  }) {
+    const clientUrl = env.CLIENT_URL || 'https://craftlocal-frontend-vq6q.onrender.com';
+    const dashboardUrl = `${clientUrl}/host/dashboard`;
+    const approvedDate = params.approvedAt || new Date().toLocaleDateString('vi-VN');
+
+    const contentHtml = `
+      <div class="greeting">Xin chào ${params.hostName},</div>
+      <p>🎉 Chúc mừng bạn! Ban quản trị CraftLocal đã xem xét và <strong>chính thức phê duyệt</strong> hồ sơ đăng ký trở thành <strong>Chủ xưởng nghệ nhân</strong> của bạn.</p>
+
+      <div class="highlight-card">
+        <div class="detail-row">
+          <span class="detail-label">Tên xưởng thủ công</span>
+          <span class="detail-value" style="color: #964824; font-size: 15px;">${params.workshopName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Người đại diện</span>
+          <span class="detail-value">${params.hostName}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Trạng thái hồ sơ</span>
+          <span class="detail-value"><span class="badge" style="background: #e8f5e9; color: #2e7d32;">ĐÃ PHÊ DUYỆT (APPROVED)</span></span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Quyền tài khoản</span>
+          <span class="detail-value" style="font-weight: 700; color: #964824;">Chủ xưởng (WORKSHOP_OWNER)</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Ngày phê duyệt</span>
+          <span class="detail-value">${approvedDate}</span>
+        </div>
+      </div>
+
+      <p style="font-size: 14px; color: #5a473b; line-height: 1.6;">
+        Hiện tại tài khoản của bạn đã được cấp đầy đủ quyền hạn để đăng tải các chương trình workshop trải nghiệm làng nghề, mở bán các tác phẩm thủ công truyền thống, quản lý lịch đặt và hướng dẫn viên.
+      </p>
+
+      <div style="text-align: center;">
+        <a href="${dashboardUrl}" class="btn">Truy cập Bảng điều khiển Chủ xưởng</a>
+      </div>
+    `;
+
+    const html = renderEmailLayout(`Hồ sơ Chủ xưởng đã được phê duyệt - CraftLocal`, contentHtml);
+    return this.sendMail({
+      to: params.hostEmail,
+      subject: `[CraftLocal] Chúc mừng! Hồ sơ đăng ký Chủ xưởng "${params.workshopName}" đã được phê duyệt 🎉`,
+      html,
+    });
+  }
+
+  /**
+   * Gửi email thông báo hồ sơ đăng ký Chủ xưởng bị từ chối kèm lý do
+   */
+  static async sendHostApplicationRejectedEmail(params: {
+    hostEmail: string;
+    hostName: string;
+    workshopName: string;
+    rejectionReason: string;
+    editUrl?: string;
+  }) {
+    const clientUrl = env.CLIENT_URL || 'https://craftlocal-frontend-vq6q.onrender.com';
+    const profileUrl = params.editUrl || `${clientUrl}/profile`;
+
+    const contentHtml = `
+      <div class="greeting">Xin chào ${params.hostName},</div>
+      <p>Cảm ơn bạn đã quan tâm và gửi hồ sơ đăng ký trở thành Chủ xưởng nghệ nhân tại <strong>CraftLocal</strong>.</p>
+      
+      <p>Sau khi xem xét kỹ lưỡng hồ sơ đăng ký xưởng <strong>"${params.workshopName}"</strong>, Ban quản trị rất tiếc phải thông báo hiện tại hồ sơ của bạn chưa đủ điều kiện phê duyệt.</p>
+
+      <div class="highlight-card" style="border-left: 4px solid #d32f2f; background: #fff5f5;">
+        <div style="font-weight: 700; color: #c62828; margin-bottom: 8px; font-size: 14px;">
+          ❌ Lý do từ chối từ Ban quản trị:
+        </div>
+        <div style="font-size: 14px; color: #2d2621; line-height: 1.6; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px dashed #ef9a9a;">
+          ${params.rejectionReason}
+        </div>
+      </div>
+
+      <p style="font-size: 14px; color: #5a473b; line-height: 1.6;">
+        💡 <strong>Bạn có thể làm gì tiếp theo?</strong><br>
+        Bạn hoàn toàn có thể đăng nhập vào trang hồ sơ cá nhân trên CraftLocal, cập nhật hoặc bổ sung các thông tin/hình ảnh theo hướng dẫn trên và nhấn <strong>"Cập nhật và gửi lại hồ sơ"</strong> để Ban quản trị xét duyệt lại.
+      </p>
+
+      <div style="text-align: center;">
+        <a href="${profileUrl}" class="btn">Chỉnh sửa và gửi lại hồ sơ</a>
+      </div>
+    `;
+
+    const html = renderEmailLayout(`Kết quả xét duyệt hồ sơ Chủ xưởng - CraftLocal`, contentHtml);
+    return this.sendMail({
+      to: params.hostEmail,
+      subject: `[CraftLocal] Thông báo kết quả xét duyệt hồ sơ Chủ xưởng "${params.workshopName}"`,
+      html,
+    });
+  }
 }

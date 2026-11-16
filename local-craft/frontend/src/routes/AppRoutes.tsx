@@ -83,6 +83,7 @@ const AppRoutes: React.FC = () => (
       <Route path="/review/:bookingId" element={<ProtectedRoute><ReviewPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/edit-profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/become-host" element={<ProtectedRoute><ProfilePage initialTab="host" /></ProtectedRoute>} />
     </Route>
 
     {/* Auth Routes */}
@@ -112,7 +113,6 @@ const AppRoutes: React.FC = () => (
       <Route path="/host/orders" element={<ManageOrdersPage />} />
       <Route path="/host/tour-guides" element={<ManageTourGuidesPage />} />
       <Route path="/host/assign-guide" element={<AssignGuidePage />} />
-      <Route path="/host/check-in" element={<QRCheckInPage />} />
     </Route>
 
     {/* Tour Guide Routes */}
