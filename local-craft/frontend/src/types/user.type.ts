@@ -9,7 +9,11 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   avatar?: string;
+  dateOfBirth?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  address?: string;
   hostId?: string; // For tour guides - which host they belong to
+  assignedSlotsCount?: number;
   createdAt: string;
   updatedAt: string;
 }

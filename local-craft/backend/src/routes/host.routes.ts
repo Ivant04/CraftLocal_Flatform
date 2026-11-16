@@ -1,5 +1,15 @@
 import { Router } from 'express';
-import { getDashboard, createTourGuide, getTourGuides, getOrders, updateOrderStatus } from '../controllers/host.controller';
+import {
+  getDashboard,
+  createTourGuide,
+  inviteTourGuide,
+  getTourGuides,
+  getTourGuideDetail,
+  updateTourGuide,
+  deleteTourGuide,
+  getOrders,
+  updateOrderStatus,
+} from '../controllers/host.controller';
 import { createWorkshop, getMyWorkshops, updateWorkshop, deleteWorkshop } from '../controllers/workshop.controller';
 import { createProduct, getMyProducts, updateProduct, deleteProduct } from '../controllers/product.controller';
 import { createTimeslot, getMyTimeslots, updateTimeslot, deleteTimeslot, assignGuide } from '../controllers/timeslot.controller';
@@ -37,7 +47,11 @@ router.put('/timeslots/:id/assign-guide', assignGuide);
 
 // Tour Guides
 router.post('/tour-guides', createTourGuide);
+router.post('/tour-guides/invite', inviteTourGuide);
 router.get('/tour-guides', getTourGuides);
+router.get('/tour-guides/:id', getTourGuideDetail);
+router.put('/tour-guides/:id', updateTourGuide);
+router.delete('/tour-guides/:id', deleteTourGuide);
 
 // Orders
 router.get('/orders', getOrders);

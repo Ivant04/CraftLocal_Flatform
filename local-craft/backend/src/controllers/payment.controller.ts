@@ -28,9 +28,18 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
     return sendError(res, 'Khung giờ không đủ chỗ trống');
   }
 
+  // Check if timeslot has already passed
+  if (timeslot.startTime && new Date(timeslot.startTime) <= new Date()) {
+    booking.bookingStatus = 'CANCELLED';
+    booking.cancelReason = 'Quá hạn thanh toán (Khung giờ trải nghiệm đã diễn ra)';
+    await booking.save();
+    return sendError(res, 'Khung giờ trải nghiệm này đã bắt đầu hoặc đã qua, không thể tiếp tục thanh toán.', 400);
+  }
+
   // Check if there's already a PENDING payment for this booking
   const existingPayment = await Payment.findOne({ bookingId, paymentStatus: 'PENDING' });
-  if (existingPayment && existingPayment.checkoutUrl) {
+  const isRecent = existingPayment?.createdAt && (Date.now() - new Date(existingPayment.createdAt).getTime() < 15 * 60 * 1000);
+  if (existingPayment && existingPayment.checkoutUrl && isRecent) {
     return sendSuccess(res, 'Đã có link thanh toán', {
       paymentId: existingPayment._id,
       orderCode: existingPayment.orderCode,
@@ -38,6 +47,9 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
       qrCode: existingPayment.qrCode,
       amount: existingPayment.amount,
     });
+  } else if (existingPayment) {
+    // Payment link expired or old, mark as EXPIRED to generate a new clean link
+    await Payment.findByIdAndUpdate(existingPayment._id, { paymentStatus: 'EXPIRED' });
   }
 
   // Generate unique orderCode and paymentCode
@@ -59,15 +71,19 @@ export const createBookingPayOSPayment = asyncHandler(async (req: Request, res: 
   // Create payOS payment link
   const workshopTitle = (booking.workshopId as any)?.title || 'Workshop';
   try {
+    const rawOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer as string).origin : undefined);
+    const clientOrigin = rawOrigin ? rawOrigin.replace(/craftlocal-frontend\.onrender\.com/g, 'craftlocal-frontend-vq6q.onrender.com') : undefined;
+
     const result = await PayOSService.createPaymentLink({
       orderCode,
       amount: booking.totalPrice,
       description: `CL ${paymentCode.slice(-8)}`,
       items: [{
-        name: workshopTitle.slice(0, 50),
-        quantity: booking.quantity,
-        price: booking.unitPrice,
+        name: `${workshopTitle} (${booking.quantity} khách)`.slice(0, 50),
+        quantity: 1,
+        price: booking.totalPrice,
       }],
+      origin: clientOrigin,
     });
 
     // Update payment with payOS response
@@ -140,11 +156,15 @@ export const createOrderPayOSPayment = asyncHandler(async (req: Request, res: Re
       price: item.price,
     }));
 
+    const rawOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer as string).origin : undefined);
+    const clientOrigin = rawOrigin ? rawOrigin.replace(/craftlocal-frontend\.onrender\.com/g, 'craftlocal-frontend-vq6q.onrender.com') : undefined;
+
     const result = await PayOSService.createPaymentLink({
       orderCode,
       amount: order.totalAmount,
       description: `CL ${paymentCode.slice(-8)}`,
       items,
+      origin: clientOrigin,
     });
 
     payment.checkoutUrl = result.checkoutUrl;
@@ -256,8 +276,8 @@ export const getPayOSPaymentStatus = asyncHandler(async (req: Request, res: Resp
 
   if (!payment) return sendError(res, 'Payment không tồn tại', 404);
 
-  // Check ownership (trừ ADMIN)
-  if (req.user!.role !== 'ADMIN' && payment.userId.toString() !== req.user!._id.toString()) {
+  // Check ownership if user is logged in (trừ ADMIN)
+  if (req.user && req.user.role !== 'ADMIN' && payment.userId.toString() !== req.user._id.toString()) {
     return sendError(res, 'Không có quyền xem payment này', 403);
   }
 

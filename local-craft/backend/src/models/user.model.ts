@@ -19,6 +19,10 @@ export interface IUser extends Document {
   password: string;
   phone: string;
   avatar?: string;
+  dateOfBirth?: Date;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  address?: string;
+  googleId?: string;
   role: 'ADMIN' | 'HOST' | 'TOUR_GUIDE' | 'TOURIST';
   status: 'PENDING' | 'ACTIVE' | 'BLOCKED';
   hostId?: mongoose.Types.ObjectId;
@@ -29,6 +33,7 @@ export interface IUser extends Document {
     ownerPhone?: string;
     businessAddress?: IAddress;
     description?: string;
+    workshopImages?: string[];
     identityCardFront?: string;
     identityCardBack?: string;
     certificate?: string;
@@ -63,6 +68,10 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true, select: false },
     phone: { type: String, trim: true },
     avatar: String,
+    dateOfBirth: Date,
+    gender: { type: String, enum: ['MALE', 'FEMALE', 'OTHER'], default: 'OTHER' },
+    address: { type: String, trim: true },
+    googleId: { type: String, sparse: true },
     role: { type: String, enum: ['ADMIN', 'HOST', 'TOUR_GUIDE', 'TOURIST'], default: 'TOURIST' },
     status: { type: String, enum: ['PENDING', 'ACTIVE', 'BLOCKED'], default: 'ACTIVE' },
     hostId: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -73,6 +82,7 @@ const userSchema = new Schema<IUser>(
       ownerPhone: String,
       businessAddress: addressSchema,
       description: String,
+      workshopImages: [{ type: String }],
       identityCardFront: String,
       identityCardBack: String,
       certificate: String,

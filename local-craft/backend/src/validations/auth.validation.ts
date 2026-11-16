@@ -17,9 +17,23 @@ export const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Họ tên phải có ít nhất 2 ký tự').optional(),
   phone: z.string().optional(),
   avatar: z.string().optional(),
+  dateOfBirth: z.string().optional().nullable(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  address: z.string().optional(),
 });
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
   newPassword: z.string().min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
 });
+
+export const googleLoginSchema = z
+  .object({
+    accessToken: z.string().min(1).optional(),
+    idToken: z.string().min(1).optional(),
+    credential: z.string().min(1).optional(),
+    role: z.enum(['TOURIST', 'HOST']).optional(),
+  })
+  .refine((data) => Boolean(data.accessToken || data.idToken || data.credential), {
+    message: 'Thiếu mã xác thực Google',
+  });

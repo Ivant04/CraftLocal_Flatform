@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { X, LogOut } from 'lucide-react';
+import { X, LogOut, User } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 interface SidebarLink {
@@ -73,11 +73,25 @@ const Sidebar: React.FC<SidebarProps> = ({ links, isOpen, onClose, title }) => {
             ))}
           </nav>
 
-          {/* Logout */}
-          <div className="p-3 border-t border-[#EAD8CC]">
+          {/* User Profile & Logout */}
+          <div className="p-3 border-t border-[#EAD8CC] space-y-1">
+            <NavLink
+              to="/profile"
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-[#964824]/10 text-[#964824] font-semibold shadow-sm'
+                    : 'text-[#7A6255] hover:bg-[#E9E4D9] hover:text-[#3D2B1F]'
+                }`
+              }
+            >
+              <User size={18} />
+              Hồ sơ cá nhân
+            </NavLink>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              className="flex items-center gap-3 w-full px-4 py-2.5 rounded-2xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut size={18} />
               Đăng xuất
